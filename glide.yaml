@@ -1,0 +1,13 @@
+package: github.com/aneri/new-chat
+import:
+- package: github.com/99designs/gqlgen
+  subpackages:
+  - graphql
+  - graphql/introspection
+  - handler
+- package: github.com/gorilla/mux
+- package: github.com/gorilla/websocket
+- package: github.com/lib/pq
+- package: github.com/vektah/gqlparser
+  subpackages:
+  - ast

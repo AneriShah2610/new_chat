@@ -1,0 +1,11 @@
+{
+    "server":{
+        "port" : "8080"
+    },
+    "cockroach":{
+        "host" : "localhost",
+        "port" : "26257",
+        "user" : "root",
+        "DbName" : "chatapp"
+    }
+}

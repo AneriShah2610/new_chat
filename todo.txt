@@ -1,0 +1,6 @@
+// ToDo:
+
+    1) Add Subscription method for new chatroom for group type by user wise
+    2) Add updateData in chatroom model as json type(id, updatetime) to get details who update chat room and what time for group chat only
+    3) Update chatroom membersid type to json(id, join, left) for get details like when member joined , when joined and when left from group
+    4) Add Receiver in chatconversation as a json type (id , status: SEND/UNREAD/READ) so that we can manage message status 

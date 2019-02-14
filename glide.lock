@@ -1,0 +1,20 @@
+hash: 7a7ebff0e1ed947b751126290767f5667f8b9fa13426d40459baeec62d6c7d04
+updated: 2019-02-07T18:04:36.503429+05:30
+imports:
+- name: github.com/99designs/gqlgen
+  version: 6f486bde038887adf67c3e3766624ef111ea95cf
+  subpackages:
+  - graphql
+  - graphql/introspection
+  - handler
+- name: github.com/gorilla/mux
+  version: a7962380ca08b5a188038c69871b8d3fbdf31e89
+- name: github.com/gorilla/websocket
+  version: 483fb8d7c32fcb4b5636cd293a92e3935932e2f4
+- name: github.com/lib/pq
+  version: 4ded0e9383f75c197b3a2aaa6d590ac52df6fd79
+- name: github.com/vektah/gqlparser
+  version: f119686bf1d4d1a68c7ed6afe35f183625443c41
+  subpackages:
+  - ast
+testImports: []

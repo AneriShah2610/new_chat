@@ -1,0 +1,36 @@
+# .gqlgen.yml example
+#
+# Refer to https://gqlgen.com/config/
+# for detailed .gqlgen.yml documentation.
+
+schema: schema.graphql
+exec:
+  filename: graph/generated.go
+resolver:
+  filename: api/handler/resolver.go
+  type: Resolver
+models:
+  User:
+    model: github.com/aneri/new_chat/model.User
+  NewUser:
+    model: github.com/aneri/new_chat/model.NewUser
+  ChatRoom:
+    model: github.com/aneri/new_chat/model.ChatRoom
+  NewChatRoom:
+    model: github.com/aneri/new_chat/model.NewChatRoom
+  ChatConversation:
+    model: github.com/aneri/new_chat/model.ChatConversation
+  NewMessage:
+    model: github.com/aneri/new_chat/model.NewMessage
+  Member:
+    model: github.com/aneri/new_chat/model.Member
+  NewChatRoomMember:
+    model: github.com/aneri/new_chat/model.NewChatRoomMember
+  ID:
+    model: github.com/aneri/new_chat/model.ID
+  State:
+    model: github.com/aneri/new_chat/model.State
+  ChatRoomType:
+    model: github.com/aneri/new_chat/model.ChatRoomType
+  MessageType:  
+    model: github.com/aneri/new_chat/model.MessageType

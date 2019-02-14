@@ -1,0 +1,109 @@
+type User {
+	id: ID!
+	name: String!
+	email: String
+	contact: String!
+	profilePicture: String
+	bio: String
+	createdAt: Time! 
+}
+type ChatRoom {
+	chatRoomID: ID!
+	creatorID: ID!
+    creator: User!
+    chatRoomName: String
+    chatRoomType: ChatRoomType!
+    members: [Member!]!
+    createdAt: Time!
+    updateBy: ID
+    updatedAt: Time
+    deleteAt: Time
+}
+type Member{
+    id: ID!
+    chatRoomID: ID!
+    member: User!
+    joinAt: Time!
+    deleteAt: Time
+    deleteFlag: Boolean
+}
+
+type ChatConversation{
+    messageId: ID!
+    chatRoomID: ID!
+    senderId: ID!
+    sender: User!
+    message: String!
+    messageType: MessageType!
+    messageParentId: ID
+    messageStatus: State!   
+    createdAt: Time!
+    updatedAt: Time
+    deletedAt: Time
+}
+enum ChatRoomType{
+    PRIVATE
+    GROUP
+}
+enum MessageType{
+    TEXT
+    IMAGE
+    VIDEO
+    GIF
+    AUDIO
+}
+enum State{
+    SEND
+    UNREAD
+    READ
+    DELETE
+}
+input NewUser{
+    name: String!
+    email: String
+    contact: String!
+    profilePicture: String
+	bio: String
+}
+input NewChatRoom{
+    creatorID: ID!
+    chatRoomName: String
+    chatRoomType: ChatRoomType!
+}
+input NewChatRoomMember{
+    chatRoomID: ID!
+    memberID: ID!
+}
+input NewMessage{
+    chatRoomID: ID!
+    senderId: ID!
+    message: String!
+    messageType: MessageType!
+    messageParentId: ID
+    messageStatus: State!   
+}
+input UpdateMessage{
+    message: string
+}
+input UpdateMessageStatus{
+    messageStatus: State!
+}
+type Subscription{
+    userJoined: User!
+    postMessage(chatRoomID: ID!): ChatConversation!
+}
+type Mutation{
+    newUser(input: NewUser!): User!
+    newChatRoom(input: NewChatRoom!, receiver: ID): ChatRoom!
+    newChatRoomMember(input: NewChatRoomMember!, receiverID: ID): Member!
+    newMessage(input: NewMessage!, senderID: ID!): ChatConversation!
+    updateMessage(input: UpdateMessage, senderID: ID!, messageID: ID!): ChatConversation!
+    deleteMessage(senderID: ID!, messageID: ID!): ChatConversation!
+    deleteChatRooMember
+}
+type Query{
+    users(name: String!): [User!]!
+    chatRooms: [ChatRoom!]
+    chatconversationByChatRoomId(chatRoomID: ID!, memberID: ID!): [ChatConversation!]!
+}
+scalar Time
