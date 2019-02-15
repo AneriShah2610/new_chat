@@ -15,7 +15,8 @@ type ChatRoom {
     chatRoomType: ChatRoomType!
     members: [Member!]!
     createdAt: Time!
-    updateBy: ID
+    updateByID: ID
+    updateBy: User
     updatedAt: Time
     deleteAt: Time
 }
@@ -83,14 +84,37 @@ input NewMessage{
     messageStatus: State!   
 }
 input UpdateMessage{
-    message: string
+    message: String
 }
 input UpdateMessageStatus{
     messageStatus: State!
 }
+input DeleteChat{
+    chatRoomID: ID!
+    memberID: ID!
+}
+input LeaveChatRoom{
+    chatRoomID: ID!
+    memberID: ID!
+}
+input UpdateChatRoomDetail{
+    chatRoomID: ID!
+    chatRoomName: String
+    updateByID: ID
+}
+input DeleteChatRoom{
+    chatRoomID: ID!
+    creaorID: ID!
+}
 type Subscription{
     userJoined: User!
-    postMessage(chatRoomID: ID!): ChatConversation!
+    messagePost(chatRoomID: ID!): ChatConversation!
+    messageStatusUpdate(messageID: ID!, chatRoomID: ID!): ChatConversation!
+    messageUpdate(chatRoomID: ID!): ChatConversation!
+    messageDelete(chatRoomID: ID!): ChatConversation!
+    chatRoomLeave(chatRoomID: ID!): ChatRoom!
+    chatRoomDetailUpdate(chatRoomID: ID!): ChatRoom!
+    chatRoomDelete(chatRoomID: ID!): ChatRoom!
 }
 type Mutation{
     newUser(input: NewUser!): User!
@@ -98,12 +122,18 @@ type Mutation{
     newChatRoomMember(input: NewChatRoomMember!, receiverID: ID): Member!
     newMessage(input: NewMessage!, senderID: ID!): ChatConversation!
     updateMessage(input: UpdateMessage, senderID: ID!, messageID: ID!): ChatConversation!
+    updateMessageStatus(input: UpdateMessageStatus!): ChatConversation!
     deleteMessage(senderID: ID!, messageID: ID!): ChatConversation!
-    deleteChatRooMember
+    deleteChat(input: DeleteChat!): Member!
+    leaveChatRoom(input: LeaveChatRoom!, memberID: ID!): Member!
+    updateChatRoomDetail(input: UpdateChatRoomDetail!): ChatRoom!
+    deleteChatRoom(input: DeleteChatRoom!): ChatRoom!
 }
 type Query{
     users(name: String!): [User!]!
     chatRooms: [ChatRoom!]
     chatconversationByChatRoomId(chatRoomID: ID!, memberID: ID!): [ChatConversation!]!
+    memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): [Member!]!
+    chatRoomListByMemberId(memberId: ID!): [ChatRoom!]!
 }
 scalar Time

@@ -45,6 +45,31 @@ func (r *mutationResolver) NewChatRoomMember(ctx context.Context, input model.Ne
 	}
 	return member, nil
 }
+
+// Leave chatroom only for group chat
+func(r *mutationResolver)LeaveChatRoom(ctx context.Context, input model.LeaveChatRoom, memberID int) (model.Member, error){
+	crConn := ctx.Value("crConn").(*dal.DbConnection)
+	var memeber model.Member
+	chatRoomType, err := CheckChatRoomTypeByChatID(ctx, input.ChatRoomID)
+	if err != nil{
+		log.Println("Error to get chatroom type by chatroom id in leave chat room function")
+	}
+	if chatRoomType == "GROUP"{
+		if input.MemberID == memberID{
+			 // Todo: Add feature for group admin : CreatorData method
+			_, err := crConn.Db.Exec("DELETE FROM members_test WHERE chatroom_id = $1 and member_id = $2", input.ChatRoomID, input.MemberID)
+			if err != nil{
+				log.Println("Error to leave from chat room", err)
+			}
+		}
+	}
+	return  memeber, nil
+}
+
+func (r *subscriptionResolver)ChatRoomLeave(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error){
+	panic("not implemented")
+}
+
 func (r *memberResolver) Member(ctx context.Context, obj *model.Member) (model.User, error) {
 	var memberInfo model.User
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
@@ -53,7 +78,7 @@ func (r *memberResolver) Member(ctx context.Context, obj *model.Member) (model.U
 	for row.Next() {
 		err := row.Scan(&memberInfo.ID, &memberInfo.Name, &memberInfo.Email, &memberInfo.Contact, &memberInfo.ProfilePicture, &memberInfo.Bio, &memberInfo.CreatedAt)
 		if err != nil {
-			log.Println("Error to scan user data as per memberid at line 24 of members_handler", err)
+			log.Println("Error to scan user data as per memberid in members_handler", err)
 		}
 	}
 	return  memberInfo, nil
@@ -91,3 +116,15 @@ func ChatRoomTotalMemberByChatRoomId(ctx context.Context, chatRoomId int)(int, e
 	}
 	return totalChatRoomMember, nil
 }
+
+
+//func CreatorData(ctx context.Context, chatRoomId int)(int){
+//	crConn := ctx.Value("crConn").(*dal.DbConnection)
+//	var chatroom model.ChatRoom
+//	row := crConn.Db.QueryRow("SELECT creator_id FROM chatroom_test WHERE chatroom_id = $1", chatRoomId)
+//	err := row.Scan(&chatroom.CreatorID)
+//	if err != nil{
+//		log.Println("Error", err)
+//	}
+//	return chatroom.CreatorID
+//}

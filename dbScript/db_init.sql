@@ -69,13 +69,13 @@ CREATE TABLE chatconversation (
 	createat TIMESTAMP NOT NULL,
 	updateat TIMESTAMP NULL DEFAULT NULL,
 	deleteat TIMESTAMP NULL DEFAULT NULL,
+	deleteflag INT NOT NULL DEFAULT 0:::INT,
 	CONSTRAINT "primary" PRIMARY KEY (id ASC),
-	CONSTRAINT fk_chatroom_id_ref_chatroom_test FOREIGN KEY (chatroom_id) REFERENCES chatroom_test (id),
+	CONSTRAINT fk_chatroom_id_ref_chatroom_test FOREIGN KEY (chatroom_id) REFERENCES chatroom_test (id)  ON DELETE CASCADE,
 	INDEX chatconversation_auto_index_fk_chatroom_id_ref_chatroom_test (chatroom_id ASC),
 	CONSTRAINT fk_sender_id_ref_user_test FOREIGN KEY (sender_id) REFERENCES user_test (id),
 	INDEX chatconversation_auto_index_fk_sender_id_ref_user_test (sender_id ASC),
 	CONSTRAINT fk_message_parent_id_ref_chatconversation FOREIGN KEY (message_parent_id) REFERENCES chatconversation (id),
 	INDEX chatconversation_auto_index_fk_message_parent_id_ref_chatconversation (message_parent_id ASC),
-	FAMILY "primary" (id, chatroom_id, sender_id, message, message_type, message_parent_id, message_status, createat, updateat, deleteat)
+	FAMILY "primary" (id, chatroom_id, sender_id, message, message_type, message_parent_id, message_status, createat, updateat, deleteat, deleteflag)
 );
-

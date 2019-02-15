@@ -47,6 +47,14 @@ func (r *queryResolver) ChatconversationByChatRoomID(ctx context.Context, chatRo
 	return  chattconversationarr, nil
 }
 
+func (r *queryResolver)MemberListByChatRoomID(ctx context.Context, chatRoomID int, memberID int) ([]model.Member, error){
+	panic("not implemented")
+}
+
+func (r *queryResolver)ChatRoomListByMemberID(ctx context.Context, memberId int) ([]model.ChatRoom, error){
+	panic("not implemented")
+}
+
 // Create New Message
 func (r *mutationResolver) NewMessage(ctx context.Context, input model.NewMessage, senderID int) (model.ChatConversation, error) {
 	var chatconversation model.ChatConversation
@@ -73,7 +81,31 @@ func (r *mutationResolver) NewMessage(ctx context.Context, input model.NewMessag
 }
 
 // Live updates of new messages
-func (r *subscriptionResolver) PostMessage(ctx context.Context, chatRoomID int) (<-chan model.ChatConversation, error) {
+func (r *subscriptionResolver) MessagePost(ctx context.Context, chatRoomID int) (<-chan model.ChatConversation, error) {
+	panic("not implemented")
+}
+
+func (r *mutationResolver)UpdateMessage(ctx context.Context, input *model.UpdateMessage, senderID int, messageID int) (model.ChatConversation, error){
+	panic("not implemented")
+}
+
+func (r *subscriptionResolver)MessageUpdate(ctx context.Context, chatRoomID int) (<-chan model.ChatConversation, error){
+	panic("not implemented")
+}
+
+func (r *mutationResolver)UpdateMessageStatus(ctx context.Context, input model.UpdateMessageStatus) (model.ChatConversation, error){
+	panic("not implemented")
+}
+
+func (r *subscriptionResolver)MessageStatusUpdate(ctx context.Context, messageID int, chatRoomID int) (<-chan model.ChatConversation, error){
+	panic("not implemented")
+}
+
+func (r *mutationResolver)DeleteMessage(ctx context.Context, senderID int, messageID int) (model.ChatConversation, error){
+	panic("not implemented")
+}
+
+func(r *subscriptionResolver)MessageDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatConversation, error){
 	panic("not implemented")
 }
 
@@ -93,6 +125,7 @@ func (r *chatConversationResolver) Sender(ctx context.Context, obj *model.ChatCo
 	}
 	return sender, nil
 }
+
 func CheckChatRoomMember(ctx context.Context, chatRoomId int, memberId int)( *time.Time, error){
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var member model.Member

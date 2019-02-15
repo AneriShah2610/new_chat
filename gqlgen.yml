@@ -34,3 +34,15 @@ models:
     model: github.com/aneri/new_chat/model.ChatRoomType
   MessageType:  
     model: github.com/aneri/new_chat/model.MessageType
+  DeleteChatRoom:
+    model: github.com/aneri/new_chat/model.DeleteChatRoom
+  DeleteChat:
+    model: github.com/aneri/new_chat/model.DeleteChat
+  LeaveChatRoom:
+    model: github.com/aneri/new_chat/model.LeaveChatRoom
+  UpdateChatRoomDetail:
+    model: github.com/aneri/new_chat/model.UpdateChatRoomDetail
+  UpdateMessage:
+    model: github.com/aneri/new_chat/model.UpdateMessage
+  UpdateMessageStatus:
+    model: github.com/aneri/new_chat/model.UpdateMessageStatus

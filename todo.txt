@@ -1,6 +1,22 @@
 // ToDo:
 
-    1) Add Subscription method for new chatroom for group type by user wise
-    2) Add updateData in chatroom model as json type(id, updatetime) to get details who update chat room and what time for group chat only
-    3) Update chatroom membersid type to json(id, join, left) for get details like when member joined , when joined and when left from group
-    4) Add Receiver in chatconversation as a json type (id , status: SEND/UNREAD/READ) so that we can manage message status 
+    messageUpdate(chatRoomID: ID!): ChatConversation!
+       messageDelete(chatRoomID: ID!): ChatConversation!
+       chatRoomLeave(chatRoomID: ID!): ChatRoom!
+       chatRoomDetailUpdate(chatRoomID: ID!): ChatRoom!
+       chatRoomDelete(chatRoomID: ID!): ChatRoom!
+
+
+   updateMessage(input: UpdateMessage, senderID: ID!, messageID: ID!): ChatConversation!
+       deleteMessage(senderID: ID!, messageID: ID!): ChatConversation!
+       deleteChatRoomMember(input: DeleteChatRoomMember!): Member!
+       leaveChatRoom(input: LeaveChatRoom!): Member!
+       updateChatRoomDetail(input: UpdateChatRoomDetail!): ChatRoom!
+       deleteChatRoom(input: DeleteChatRoom!): ChatRoom!
+
+    memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): [Member!]!
+       chatRoomListByMemberId(memberId: ID!): [ChatRoom!]!
+
+
+       -- after deleting chat retrieve chatroomlist by memberid
+       -- leave chatroom by member in group chat

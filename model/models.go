@@ -34,7 +34,7 @@ type ChatRoom struct {
 	ChatRoomName *string      `json:"chatRoomName"`
 	ChatRoomType ChatRoomType `json:"chatRoomType"`
 	CreatedAt    time.Time    `json:"createdAt"`
-	UpdateBy     *int          `json:"updateBy"`
+	UpdateByID   *int         `json:"updateBy"`
 	UpdatedAt    *time.Time   `json:"updatedAt"`
 	DeleteAt     *time.Time   `json:"deleteAt"`
 }
@@ -77,6 +77,36 @@ type NewMessage struct {
 	MessageParentID *int        `json:"messageParentId"`
 	MessageStatus   State       `json:"messageStatus"`
 }
+
+type DeleteChatRoom struct {
+	ChatRoomID int `json:"chatRoomID"`
+	CreaorID   int `json:"creaorID"`
+}
+
+type DeleteChat struct {
+	ChatRoomID int `json:"chatRoomID"`
+	MemberID   int `json:"memberID"`
+}
+
+type LeaveChatRoom struct {
+	ChatRoomID int `json:"chatRoomID"`
+	MemberID   int `json:"memberID"`
+}
+
+type UpdateChatRoomDetail struct {
+	ChatRoomID   int     `json:"chatRoomID"`
+	ChatRoomName *string `json:"chatRoomName"`
+	UpdateByID   *int     `json:"updateByID"`
+}
+
+type UpdateMessage struct {
+	Message *string `json:"message"`
+}
+
+type UpdateMessageStatus struct {
+	MessageStatus State `json:"messageStatus"`
+}
+
 type ChatRoomType string
 
 const (
