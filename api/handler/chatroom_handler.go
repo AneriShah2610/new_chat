@@ -97,15 +97,25 @@ func(r *subscriptionResolver)ChatRoomDetailUpdate(ctx context.Context, chatRoomI
 
 // Delete group chatroom only by creator i.e. admin
 func (r *mutationResolver)DeleteChatRoom(ctx context.Context, input model.DeleteChatRoom) (model.ChatRoom, error){
-	//crConn := ctx.Value("crConn").(*dal.DbConnection)
-	//creatorData, err := CreatorDataByChatRoomID(ctx, input.ChatRoomID)
-	//if err != nil{
-	//	log.Println("Error to check that creator exist or not")
-	//}
-	////if creatorData == input.CreaorID{
-	////	_, err := crConn.Db.Exec("DELETE FROM chat")
-	////}
-	panic("not implemented")
+	crConn := ctx.Value("crConn").(*dal.DbConnection)
+	var chatroom model.ChatRoom
+	creatorData, err := CreatorDataByChatRoomID(ctx, input.ChatRoomID)
+	if err != nil{
+		log.Println("Error to check that creator exist or not")
+	}
+	if creatorData == input.CreaorID{
+		countChatRoomMemebr,err  := ChatRoomTotalMemberByChatRoomId(ctx, input.ChatRoomID)
+		if err != nil{
+			log.Println("Error to count chatroom member", err)
+		}
+		if countChatRoomMemebr == 0{
+			_, err := crConn.Db.Exec("DELETE FROM chatroom_test WHERE id = $1", input.ChatRoomID)
+			if err != nil{
+				log.Println("Error to delete chat room", err)
+			}
+		}
+	}
+	return  chatroom, nil
 }
 
 func(r *subscriptionResolver)ChatRoomDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error){
