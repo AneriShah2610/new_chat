@@ -86,7 +86,7 @@ type ComplexityRoot struct {
 		NewChatRoom          func(childComplexity int, input model.NewChatRoom, receiver *int) int
 		NewChatRoomMember    func(childComplexity int, input model.NewChatRoomMember, receiverID *int) int
 		NewMessage           func(childComplexity int, input model.NewMessage, senderID int) int
-		UpdateMessage        func(childComplexity int, input *model.UpdateMessage, senderID int, messageID int) int
+		UpdateMessage        func(childComplexity int, input *model.UpdateMessage) int
 		UpdateMessageStatus  func(childComplexity int, input model.UpdateMessageStatus) int
 		DeleteMessage        func(childComplexity int, senderID int, messageID int) int
 		DeleteChat           func(childComplexity int, input model.DeleteChat) int
@@ -143,7 +143,7 @@ type MutationResolver interface {
 	NewChatRoom(ctx context.Context, input model.NewChatRoom, receiver *int) (model.ChatRoom, error)
 	NewChatRoomMember(ctx context.Context, input model.NewChatRoomMember, receiverID *int) (model.Member, error)
 	NewMessage(ctx context.Context, input model.NewMessage, senderID int) (model.ChatConversation, error)
-	UpdateMessage(ctx context.Context, input *model.UpdateMessage, senderID int, messageID int) (model.ChatConversation, error)
+	UpdateMessage(ctx context.Context, input *model.UpdateMessage) (model.ChatConversation, error)
 	UpdateMessageStatus(ctx context.Context, input model.UpdateMessageStatus) (model.ChatConversation, error)
 	DeleteMessage(ctx context.Context, senderID int, messageID int) (model.ChatConversation, error)
 	DeleteChat(ctx context.Context, input model.DeleteChat) (model.Member, error)
@@ -282,24 +282,6 @@ func field_Mutation_updateMessage_args(rawArgs map[string]interface{}) (map[stri
 		}
 	}
 	args["input"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["senderID"]; ok {
-		var err error
-		arg1, err = model.UnmarshalID(tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["senderID"] = arg1
-	var arg2 int
-	if tmp, ok := rawArgs["messageID"]; ok {
-		var err error
-		arg2, err = model.UnmarshalID(tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["messageID"] = arg2
 	return args, nil
 
 }
@@ -916,7 +898,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateMessage(childComplexity, args["input"].(*model.UpdateMessage), args["senderID"].(int), args["messageID"].(int)), true
+		return e.complexity.Mutation.UpdateMessage(childComplexity, args["input"].(*model.UpdateMessage)), true
 
 	case "Mutation.updateMessageStatus":
 		if e.complexity.Mutation.UpdateMessageStatus == nil {
@@ -2379,7 +2361,7 @@ func (ec *executionContext) _Mutation_updateMessage(ctx context.Context, field g
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateMessage(rctx, args["input"].(*model.UpdateMessage), args["senderID"].(int), args["messageID"].(int))
+		return ec.resolvers.Mutation().UpdateMessage(rctx, args["input"].(*model.UpdateMessage))
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -5089,6 +5071,18 @@ func UnmarshalUpdateMessage(v interface{}) (model.UpdateMessage, error) {
 			if err != nil {
 				return it, err
 			}
+		case "senderID":
+			var err error
+			it.SenderID, err = model.UnmarshalID(v)
+			if err != nil {
+				return it, err
+			}
+		case "messageID":
+			var err error
+			it.MessageID, err = model.UnmarshalID(v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -5224,6 +5218,8 @@ input NewMessage{
 }
 input UpdateMessage{
     message: String
+    senderID: ID!
+    messageID: ID!
 }
 input UpdateMessageStatus{
     messageStatus: State!
@@ -5260,7 +5256,7 @@ type Mutation{
     newChatRoom(input: NewChatRoom!, receiver: ID): ChatRoom!
     newChatRoomMember(input: NewChatRoomMember!, receiverID: ID): Member!
     newMessage(input: NewMessage!, senderID: ID!): ChatConversation!
-    updateMessage(input: UpdateMessage, senderID: ID!, messageID: ID!): ChatConversation!
+    updateMessage(input: UpdateMessage): ChatConversation!
     updateMessageStatus(input: UpdateMessageStatus!): ChatConversation!
     deleteMessage(senderID: ID!, messageID: ID!): ChatConversation!
     deleteChat(input: DeleteChat!): Member!

@@ -85,6 +85,8 @@ input NewMessage{
 }
 input UpdateMessage{
     message: String
+    senderID: ID!
+    messageID: ID!
 }
 input UpdateMessageStatus{
     messageStatus: State!
@@ -121,7 +123,7 @@ type Mutation{
     newChatRoom(input: NewChatRoom!, receiver: ID): ChatRoom!
     newChatRoomMember(input: NewChatRoomMember!, receiverID: ID): Member!
     newMessage(input: NewMessage!, senderID: ID!): ChatConversation!
-    updateMessage(input: UpdateMessage, senderID: ID!, messageID: ID!): ChatConversation!
+    updateMessage(input: UpdateMessage): ChatConversation!
     updateMessageStatus(input: UpdateMessageStatus!): ChatConversation!
     deleteMessage(senderID: ID!, messageID: ID!): ChatConversation!
     deleteChat(input: DeleteChat!): Member!

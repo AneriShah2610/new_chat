@@ -8,7 +8,6 @@
 -- DROP TABLE public.members_test
 -- DROP TABLE public.chatconversation
 
-
 CREATE TABLE user_test (
 	id INT NOT NULL DEFAULT unique_rowid(),
 	"name" STRING NOT NULL,
@@ -22,7 +21,6 @@ CREATE TABLE user_test (
 	UNIQUE INDEX user_test_contact_key (contact ASC),
 	FAMILY "primary" (id, "name", email, contact, profile_picture, bio, createdat)
 );
-
 
 CREATE TABLE chatroom_test (
 	id INT NOT NULL DEFAULT unique_rowid(),
@@ -65,13 +63,13 @@ CREATE TABLE chatconversation (
 	message STRING NOT NULL,
 	message_type STRING NOT NULL,
 	message_parent_id INT NULL DEFAULT NULL,
-	message_status STRING NULL DEFAULT 'SEND':::STRING,
+	message_status STRING NOT NULL,
 	createat TIMESTAMP NOT NULL,
 	updateat TIMESTAMP NULL DEFAULT NULL,
 	deleteat TIMESTAMP NULL DEFAULT NULL,
 	deleteflag INT NOT NULL DEFAULT 0:::INT,
 	CONSTRAINT "primary" PRIMARY KEY (id ASC),
-	CONSTRAINT fk_chatroom_id_ref_chatroom_test FOREIGN KEY (chatroom_id) REFERENCES chatroom_test (id)  ON DELETE CASCADE,
+	CONSTRAINT fk_chatroom_id_ref_chatroom_test FOREIGN KEY (chatroom_id) REFERENCES chatroom_test (id) ON DELETE CASCADE,
 	INDEX chatconversation_auto_index_fk_chatroom_id_ref_chatroom_test (chatroom_id ASC),
 	CONSTRAINT fk_sender_id_ref_user_test FOREIGN KEY (sender_id) REFERENCES user_test (id),
 	INDEX chatconversation_auto_index_fk_sender_id_ref_user_test (sender_id ASC),

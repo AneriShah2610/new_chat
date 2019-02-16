@@ -23,7 +23,7 @@ func (r *queryResolver) Users(ctx context.Context, name string) ([]model.User, e
 	var users []model.User
 	var user model.User
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	rows, err := crConn.Db.Query("SELECT id, name, email, contact, profile_picture, bio, createdat FROM user_test WHERE name != $1", name)
+	rows, err := crConn.Db.Query("SELECT id, name, email, contact, profile_picture, bio, createdat FROM user_test WHERE name != $1 ORDER BY name", name)
 	if err != nil {
 		log.Println("Error at 23 line of usr_handler", err)
 	}

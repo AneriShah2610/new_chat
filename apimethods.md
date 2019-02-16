@@ -1,7 +1,6 @@
 # Chat Api Functionality
 
 1) Create New User :
-
    ```
    mutation{
      newUser(input:{
@@ -21,7 +20,6 @@
    }
    ```
 2) Retrieve All Users Details Except Own:
-
     ```
     query{
       users(name:"xyz"){
@@ -36,7 +34,6 @@
     }
     ```
 3) Get Live Update For New User Join:
-
     ```
     subscription{
       userJoined{
@@ -51,7 +48,6 @@
     }
     ``` 
 4) Create New ChatRoom:
-   
     ```
     mutation{
       newChatRoom(input:{
@@ -77,7 +73,6 @@
     For private chat you have to add receiver but for group chat there is no need of receiver but it is 
     mandatory to write  chatroom name otherwise it send null name 
 5) Retrieve All ChatRoom:
-    
     ```
     query{
       chatRooms{
@@ -103,7 +98,6 @@
     }
     ```
 6) Add Member in Private ChatRoom:
-
     ```
     mutation{
       newChatRoomMember(input:{
@@ -117,7 +111,6 @@
     }
     ```
 7) Add Member in Group ChatRoom:
-
     ```
    mutation{
      newChatRoomMember(input:{
@@ -135,7 +128,6 @@
    }
     ```
  8) Retrieve ChatConversation by particular ChatRoom:
- 
     ```
     query{
       chatconversationByChatRoomId(chatRoomID:"0123456789",memberID:"987456310"){
@@ -157,7 +149,6 @@
     }
     ```
 9) Add Message in ChatRoom:
-
     ```
     mutation{
       newMessage(input:{
@@ -183,7 +174,6 @@
     }
     ```
 10) Delete Chat by Particular memberId:
-
     ```
     query{
       chatconversationByChatRoomId(chatRoomID:"0123456789",memberID:"9876543210"){
@@ -201,8 +191,7 @@
       }
     }
     ```
-11) Leave ChatRoom From Group:
-    
+11) Leave ChatRoom From Group: 
     ```
     mutation{
       leaveChatRoom(input:{
@@ -215,7 +204,6 @@
     }
     ```
 12) Update ChatRoom Details:
-
     ```
     mutation{
       updateChatRoomDetail(input:{
@@ -240,4 +228,75 @@
         }
       }
     }
+    ```
+13) View MemberList By ChatRoom:
+    ```
+    query{
+      memberListByChatRoomId(chatRoomID:"012456789",memberID:"4578954120"){
+        id
+        chatRoomID
+        member{
+          id
+          name
+          email
+          contact
+        }
+        joinAt
+      }
+    }
+    ```
+14) View ChatRoomList By MemberId:
+    ```
+    
+    ```
+15) Update Message(only sender can update message):
+    ```
+    mutation{
+      updateMessage(input:{
+        senderID:"012465788",
+        messageID:"458451212",
+        message:"xyvxxxx"
+      }){
+        messageId
+        chatRoomID
+        senderId
+        sender{
+          name
+          email
+          contact
+        }
+        message
+        messageType
+        messageParentId
+        messageStatus
+        createdAt
+        updatedAt
+      }
+    }
+    ```
+16) Delete Message(only sender can delete message):
+    ```
+    mutation{
+      deleteMessage(senderID:"0123456",messageID:"0000000000"){
+        messageId
+        chatRoomID
+        message
+      }
+    }
+    ```
+17) Live Message Post:
+    ```
+    
+    ```
+18) Live Update Of Message:
+    ```
+    ```
+19) Live Update Of Message:
+    ```
+    ```
+20) Live update of ChatRoom:
+    ```
+    ```
+21) Live Update of ChatRoom Delete:
+    ```
     ```

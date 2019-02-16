@@ -58,7 +58,7 @@ func (r *mutationResolver) NewChatRoom(ctx context.Context, input model.NewChatR
 	return  chatroom, nil
 }
 
-// DeleteChatRoom
+// Delete chat by particular member
 func (r *mutationResolver)DeleteChat(ctx context.Context, input model.DeleteChat) (model.Member, error){
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var member model.Member

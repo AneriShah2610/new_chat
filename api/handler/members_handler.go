@@ -22,7 +22,7 @@ func (r *mutationResolver) NewChatRoomMember(ctx context.Context, input model.Ne
 		// Fetch Member existence in  chatRoom
 		checkMemberExist, err := CheckMemberExistence(ctx, input.ChatRoomID, input.MemberID)
 		if err != nil{
-			log.Println("Error at checkMemberExist function", err)
+			log.Println("Error at checking of  MemberExist function", err)
 		}
 		if checkMemberExist.MemberID == 0 {
 			_, err := crConn.Db.Exec("INSERT INTO members_test (chatroom_id, member_id, joinat) values ($1, $2, NOW())", input.ChatRoomID, input.MemberID)
@@ -87,9 +87,10 @@ func (r *memberResolver) Member(ctx context.Context, obj *model.Member) (model.U
 func CheckMemberExistence(ctx context.Context, chatRoomId int, memberId int) (model.Member, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var member model.Member
-	rows, _ := crConn.Db.Query("SELECT id, chatroom_id, member_id, joinat FROM members_test WHERE chatroom_id = $1 and member_id = $2", chatRoomId, memberId)
+	rows, _ := crConn.Db.Query("SELECT id, chatroom_id, member_id, joinat,deleteat FROM members_test WHERE chatroom_id = $1 and member_id = $2", chatRoomId, memberId)
+	defer  rows.Close()
 	for rows.Next() {
-		err := rows.Scan(&member.ID, &member.ChatRoomID, &member.MemberID, &member.JoinAt)
+		err := rows.Scan(&member.ID, &member.ChatRoomID, &member.MemberID, &member.JoinAt,& member.DeleteAt)
 		if err != nil {
 			log.Println("Error to read member data as per chatroom id", err)
 		}

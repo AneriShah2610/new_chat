@@ -101,6 +101,8 @@ type UpdateChatRoomDetail struct {
 
 type UpdateMessage struct {
 	Message *string `json:"message"`
+	SenderID int	`json:"senderID"`
+	MessageID int 	`json:"messageID"`
 }
 
 type UpdateMessageStatus struct {
