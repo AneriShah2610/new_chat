@@ -1,11 +1,14 @@
 type User {
 	id: ID!
-	name: String!
-	email: String
-	contact: String!
+	userName: String!
+    firstName: String
+    lastName: String
+	email: String!
+	contact: String
+    bio: String
 	profilePicture: String
-	bio: String
-	createdAt: Time! 
+	createdAt: Time!
+    updatedAt: Time!
 }
 type ChatRoom {
 	chatRoomID: ID!
@@ -26,21 +29,19 @@ type Member{
     member: User!
     joinAt: Time!
     deleteAt: Time
-    deleteFlag: Boolean
 }
 
 type ChatConversation{
     messageId: ID!
     chatRoomID: ID!
-    senderId: ID!
+    senderID: ID!
     sender: User!
     message: String!
     messageType: MessageType!
+    messageStatus: State!
     messageParentId: ID
-    messageStatus: State!   
     createdAt: Time!
     updatedAt: Time
-    deletedAt: Time
 }
 enum ChatRoomType{
     PRIVATE
@@ -60,9 +61,11 @@ enum State{
     DELETE
 }
 input NewUser{
-    name: String!
-    email: String
-    contact: String!
+    userName: String!
+    firstName: String
+    lastName: String
+    email: String!
+    contact: String
     profilePicture: String
 	bio: String
 }
@@ -77,11 +80,16 @@ input NewChatRoomMember{
 }
 input NewMessage{
     chatRoomID: ID!
-    senderId: ID!
+    senderID: ID!
     message: String!
     messageType: MessageType!
     messageParentId: ID
     messageStatus: State!   
+}
+input UpdateUser{
+    userName: String
+    firstName: String
+    lastName: String
 }
 input UpdateMessage{
     message: String

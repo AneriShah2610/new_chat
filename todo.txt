@@ -20,3 +20,12 @@
 
        -- after deleting chat retrieve chatroomlist by memberid
        -- leave chatroom by member in group chat
+
+
+
+1. CheckUserExistence in user_handler.go(by email)
+2. Select by true in CheckUserExistence
+3. Returning id
+4. All place time.Now()
+5. True and false at all function
+6. Global variable of variable for subscription

@@ -8,53 +8,56 @@
 -- DROP TABLE public.members_test
 -- DROP TABLE public.chatconversation
 
-CREATE TABLE user_test (
+CREATE TABLE users (
 	id INT NOT NULL DEFAULT unique_rowid(),
-	"name" STRING NOT NULL,
-	email STRING NULL DEFAULT NULL,
-	contact STRING NOT NULL,
-	profile_picture STRING NULL DEFAULT NULL,
+	username STRING NOT NULL,
+	first_name STRING NULL DEFAULT NULL,
+	last_name STRING NULL DEFAULT NULL,
+	email STRING NOT NULL,
+	contact STRING NULL DEFAULT NULL,
 	bio STRING NULL DEFAULT NULL,
-	createdat TIMESTAMP WITH TIME ZONE NULL,
+	profile_picture STRING NULL DEFAULT NULL,
+	created_at TIMESTAMP NULL,
+	updated_at TIMESTAMP NULL DEFAULT NULL,
 	CONSTRAINT "primary" PRIMARY KEY (id ASC),
-	UNIQUE INDEX user_test_name_key ("name" ASC),
-	UNIQUE INDEX user_test_contact_key (contact ASC),
-	FAMILY "primary" (id, "name", email, contact, profile_picture, bio, createdat)
+	UNIQUE INDEX chat_users_email_key (email ASC),
+	FAMILY "primary" (id, username, first_name, last_name, email, contact, bio, profile_picture, created_at, updated_at)
 );
 
-CREATE TABLE chatroom_test (
+CREATE TABLE chatrooms (
 	id INT NOT NULL DEFAULT unique_rowid(),
 	creator_id INT NOT NULL,
 	chatroom_name STRING NULL DEFAULT NULL,
 	chatroom_type STRING NOT NULL,
-	createat TIMESTAMP WITH TIME ZONE NOT NULL,
-	updateby INT NULL,
-	updateat TIMESTAMP WITH TIME ZONE NULL DEFAULT NULL,
-	deleteat TIMESTAMP WITH TIME ZONE NULL DEFAULT NULL,
+	created_at TIMESTAMP NOT NULL,
+	updated_by INT NULL DEFAULT NULL,
+	updated_at TIMESTAMP NULL DEFAULT NULL,
+	deleted_at TIMESTAMP NULL DEFAULT NULL,
 	hashkey STRING NULL DEFAULT NULL,
 	CONSTRAINT "primary" PRIMARY KEY (id ASC),
-	CONSTRAINT fk_creator_id_ref_user_test FOREIGN KEY (creator_id) REFERENCES user_test (id) ON DELETE CASCADE,
-	INDEX chatroom_test_auto_index_fk_creator_id_ref_user_test (creator_id ASC),
-	CONSTRAINT fk_updateby_ref_user_test FOREIGN KEY (updateby) REFERENCES user_test (id),
-	INDEX chatroom_test_auto_index_fk_updateby_ref_user_test (updateby ASC),
-	UNIQUE INDEX chatroom_test_hashkey_key (hashkey ASC),
-	FAMILY "primary" (id, creator_id, chatroom_name, chatroom_type, createat, updateby, updateat, deleteat, hashkey)
+	CONSTRAINT fk_creator_id_ref_users FOREIGN KEY (creator_id) REFERENCES users (id),
+	INDEX chatroom_auto_index_fk_creator_id_ref_users (creator_id ASC),
+	CONSTRAINT fk_updated_by_ref_users FOREIGN KEY (updated_by) REFERENCES users (id),
+	INDEX chatroom_auto_index_fk_updated_by_ref_users (updated_by ASC),
+	UNIQUE INDEX chatrooms_hashkey_key (hashkey ASC),
+	FAMILY "primary" (id, creator_id, chatroom_name, chatroom_type, created_at, updated_by, updated_at, deleted_at, hashkey)
 );
 
-CREATE TABLE members_test (
+
+CREATE TABLE members (
 	id INT NOT NULL DEFAULT unique_rowid(),
 	chatroom_id INT NOT NULL,
 	member_id INT NOT NULL,
-	joinat TIMESTAMP WITH TIME ZONE NOT NULL,
-	deleteat TIMESTAMP WITH TIME ZONE NULL DEFAULT NULL,
-	flag BOOL NULL DEFAULT false,
+	joined_at TIMESTAMP NOT NULL,
+	deleted_at TIMESTAMP NOT NULL,
 	CONSTRAINT "primary" PRIMARY KEY (id ASC),
-	CONSTRAINT fk_chatroom_id_ref_chatroom_test FOREIGN KEY (chatroom_id) REFERENCES chatroom_test (id),
-	INDEX members_test_auto_index_fk_chatroom_id_ref_chatroom_test (chatroom_id ASC),
-	CONSTRAINT fk_member_id_ref_user_test FOREIGN KEY (member_id) REFERENCES user_test (id),
-	INDEX members_test_auto_index_fk_member_id_ref_user_test (member_id ASC),
-	FAMILY "primary" (id, chatroom_id, member_id, joinat, deleteat, flag)
+	CONSTRAINT fk_chatroom_id_ref_chatrooms FOREIGN KEY (chatroom_id) REFERENCES chatrooms (id) ON DELETE CASCADE,
+	INDEX members_auto_index_fk_chatroom_id_ref_chatrooms (chatroom_id ASC),
+	CONSTRAINT fk_member_id_ref_users FOREIGN KEY (member_id) REFERENCES users (id) ON DELETE CASCADE,
+	INDEX members_auto_index_fk_member_id_ref_users (member_id ASC),
+	FAMILY "primary" (id, chatroom_id, member_id, joined_at, deleted_at)
 );
+
 
 CREATE TABLE chatconversation (
 	id INT NOT NULL DEFAULT unique_rowid(),
@@ -62,18 +65,17 @@ CREATE TABLE chatconversation (
 	sender_id INT NOT NULL,
 	message STRING NOT NULL,
 	message_type STRING NOT NULL,
-	message_parent_id INT NULL DEFAULT NULL,
 	message_status STRING NOT NULL,
-	createat TIMESTAMP NOT NULL,
-	updateat TIMESTAMP NULL DEFAULT NULL,
-	deleteat TIMESTAMP NULL DEFAULT NULL,
-	deleteflag INT NOT NULL DEFAULT 0:::INT,
+	message_parent_id INT NOT NULL,
+	created_at TIMESTAMP NOT NULL,
+	updatedat TIMESTAMP NULL DEFAULT NULL,
 	CONSTRAINT "primary" PRIMARY KEY (id ASC),
-	CONSTRAINT fk_chatroom_id_ref_chatroom_test FOREIGN KEY (chatroom_id) REFERENCES chatroom_test (id) ON DELETE CASCADE,
-	INDEX chatconversation_auto_index_fk_chatroom_id_ref_chatroom_test (chatroom_id ASC),
-	CONSTRAINT fk_sender_id_ref_user_test FOREIGN KEY (sender_id) REFERENCES user_test (id),
-	INDEX chatconversation_auto_index_fk_sender_id_ref_user_test (sender_id ASC),
+	CONSTRAINT fk_chatroom_id_ref_chatrooms FOREIGN KEY (chatroom_id) REFERENCES chatrooms (id) ON DELETE CASCADE,
+	INDEX chatconversation_auto_index_fk_chatroom_id_ref_chatrooms (chatroom_id ASC),
+	CONSTRAINT fk_sender_id_ref_users FOREIGN KEY (sender_id) REFERENCES users (id),
+	INDEX chatconversation_auto_index_fk_sender_id_ref_users (sender_id ASC),
 	CONSTRAINT fk_message_parent_id_ref_chatconversation FOREIGN KEY (message_parent_id) REFERENCES chatconversation (id),
 	INDEX chatconversation_auto_index_fk_message_parent_id_ref_chatconversation (message_parent_id ASC),
-	FAMILY "primary" (id, chatroom_id, sender_id, message, message_type, message_parent_id, message_status, createat, updateat, deleteat, deleteflag)
+	FAMILY "primary" (id, chatroom_id, sender_id, message, message_type, message_status, message_parent_id, created_at, updatedat)
 );
+

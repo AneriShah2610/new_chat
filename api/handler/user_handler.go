@@ -2,14 +2,15 @@ package handler
 
 import (
 	"context"
-	"log"
+	"database/sql"
+	er "github.com/aneri/new_chat/error"
 	"math/rand"
 	"time"
 
 	"github.com/aneri/new_chat/api/dal"
 	"github.com/aneri/new_chat/api/helper"
 
-	model "github.com/aneri/new_chat/model"
+	"github.com/aneri/new_chat/model"
 )
 
 var addUserChannel map[int]chan model.User
@@ -23,15 +24,17 @@ func (r *queryResolver) Users(ctx context.Context, name string) ([]model.User, e
 	var users []model.User
 	var user model.User
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	rows, err := crConn.Db.Query("SELECT id, name, email, contact, profile_picture, bio, createdat FROM user_test WHERE name != $1 ORDER BY name", name)
+	rows, err := crConn.Db.Query("SELECT id, username, first_name, last_name, email, contact, bio, profile_picture, created_at, updated_at FROM users WHERE username != $1 ORDER BY name ASC", name)
 	if err != nil {
-		log.Println("Error at 23 line of usr_handler", err)
+		er.DebugPrintf(err)
+		return []model.User{}, er.InternalServerError
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Contact, &user.ProfilePicture, &user.Bio, &user.CreatedAt)
+		err := rows.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Email, &user.Contact, &user.Bio, &user.ProfilePicture, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
-			log.Println("User data scan error")
+			er.DebugPrintf(err)
+			return []model.User{}, er.InternalServerError
 		}
 		users = append(users, user)
 	}
@@ -44,22 +47,27 @@ func (r *mutationResolver) NewUser(ctx context.Context, input model.NewUser) (mo
 
 	var err error
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	user, err = UserData(ctx, input.Name)
+	isUserExist, err := CheckUserExistence(ctx, input.UserName)
 	if err != nil {
-		log.Println("Error to fetch user data")
+		er.DebugPrintf(err)
+		return model.User{}, er.InternalServerError
 	}
-	if user.Name == "" {
-		_, err := crConn.Db.Exec("INSERT INTO user_test (name, email, contact, profile_picture, bio, createdat) VALUES ($1, $2, $3, $4, $5, NOW())", input.Name, input.Email, input.Contact, input.ProfilePicture, input.Bio)
-		if err != nil {
-			log.Print("Error while inserting data", err)
+	if !isUserExist {
+		row := crConn.Db.QueryRow("INSERT INTO users (username, first_name, last_name, email, contact, bio, profile_picture, created_at,) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id", input.UserName, *input.FirstName, *input.LastName, input.Email, input.Contact, input.Bio, input.ProfilePicture, time.Now())
+		err = row.Scan(&user.ID)
+		if err != nil{
+			er.DebugPrintf(err)
+			return model.User{}, er.InternalServerError
 		}
 	}
 	user = model.User{
-		Name: input.Name,
+		Username: input.UserName,
+		FirstName: input.FirstName,
+		LastName: input.LastName,
 		Email: input.Email,
 		Contact: input.Contact,
-		ProfilePicture: input.ProfilePicture,
 		Bio: input.Bio,
+		ProfilePicture: input.ProfilePicture,
 	}
 	for _, observer := range addUserChannel {
 		observer <- user
@@ -81,19 +89,15 @@ func (r *subscriptionResolver) UserJoined(ctx context.Context) (<-chan model.Use
 	return userEvent, nil
 }
 
-func UserData(ctx context.Context, name string) (model.User, error) {
-	var user model.User
+func CheckUserExistence(ctx context.Context, userName string) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	row, err := crConn.Db.Query("SELECT id, name, email, contact, profile_picture, bio, createdat FROM user_test WHERE name = $1", name)
-	if err != nil {
-		log.Println("Error to read user data as per name", err)
+	var isUserExist bool
+	row := crConn.Db.QueryRow("SELECT true FROM users WHERE usermname = $1", userName)
+
+	err := row.Scan(&isUserExist)
+	if err != nil && err == sql.ErrNoRows{
+		er.DebugPrintf(err)
+		return false, er.InternalServerError
 	}
-	defer row.Close()
-	for row.Next() {
-		err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Contact, &user.ProfilePicture, &user.Bio, &user.CreatedAt)
-		if err != nil {
-			log.Println("Error to read user details as per name", err)
-		}
-	}
-	return user, nil
+	return isUserExist, nil
 }

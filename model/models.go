@@ -11,39 +11,57 @@ import (
 )
 
 type User struct {
-	ID             int       `json:"id"`
-	Name           string    `json:"name"`
-	Email          *string   `json:"email"`
-	Contact        string    `json:"contact"`
-	ProfilePicture *string   `json:"profilePicture"`
+	ID             int    `json:"id"`
+	Username       string    `json:"username"`
+	FirstName      *string   `json:"firstName"`
+	LastName       *string   `json:"lastName"`
+	Email          string    `json:"email"`
+	Contact        *string   `json:"contact"`
 	Bio            *string   `json:"bio"`
+	ProfilePicture *string   `json:"profilePicture"`
 	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
 type NewUser struct {
-	Name           string  `json:"name"`
-	Email          *string `json:"email"`
-	Contact        string  `json:"contact"`
+	UserName       string  `json:"userName"`
+	FirstName      *string `json:"firstName"`
+	LastName       *string `json:"lastName"`
+	Email          string `json:"email"`
+	Contact        *string  `json:"contact"`
 	ProfilePicture *string `json:"profilePicture"`
 	Bio            *string `json:"bio"`
 }
 
+type UpdateUser struct {
+	UserName  *string `json:"userName"`
+	FirstName *string `json:"firstName"`
+	LastName  *string `json:"lastName"`
+}
+
 type ChatRoom struct {
-	ChatRoomID   int          `json:"chatRoomID"`
-	CreatorID    int          `json:"creatorID"`
+	ChatRoomID   int       `json:"chatRoomID"`
+	CreatorID    int       `json:"creatorID"`
 	ChatRoomName *string      `json:"chatRoomName"`
 	ChatRoomType ChatRoomType `json:"chatRoomType"`
 	CreatedAt    time.Time    `json:"createdAt"`
-	UpdateByID   *int         `json:"updateBy"`
+	UpdateByID   *int      `json:"updateByID"`
 	UpdatedAt    *time.Time   `json:"updatedAt"`
 	DeleteAt     *time.Time   `json:"deleteAt"`
 }
 
 type NewChatRoom struct {
-	CreatorID    int          `json:"creatorID"`
+	CreatorID    int       `json:"creatorID"`
 	ChatRoomName *string      `json:"chatRoomName"`
 	ChatRoomType ChatRoomType `json:"chatRoomType"`
 }
+
+type UpdateChatRoomDetail struct {
+	ChatRoomID   int  `json:"chatRoomID"`
+	ChatRoomName *string `json:"chatRoomName"`
+	UpdateByID   *int `json:"updateByID"`
+}
+
 type Member struct {
 	ID         int        `json:"id"`
 	ChatRoomID int        `json:"chatRoomID"`
@@ -56,36 +74,10 @@ type NewChatRoomMember struct {
 	ChatRoomID int `json:"chatRoomID"`
 	MemberID   int `json:"memberID"`
 }
-type ChatConversation struct {
-	MessageID       int         `json:"messageId"`
-	ChatRoomID      int         `json:"chatRoomID"`
-	SenderID        int         `json:"senderId"`
-	Message         string      `json:"message"`
-	MessageType     MessageType `json:"messageType"`
-	MessageParentID *int        `json:"messageParentId"`
-	MessageStatus   State       `json:"messageStatus"`
-	CreatedAt       time.Time   `json:"createdAt"`
-	UpdatedAt       *time.Time  `json:"updatedAt"`
-	DeletedAt       *time.Time  `json:"deletedAt"`
-}
-
-type NewMessage struct {
-	ChatRoomID      int         `json:"chatRoomID"`
-	SenderID        int         `json:"senderId"`
-	Message         string      `json:"message"`
-	MessageType     MessageType `json:"messageType"`
-	MessageParentID *int        `json:"messageParentId"`
-	MessageStatus   State       `json:"messageStatus"`
-}
 
 type DeleteChatRoom struct {
 	ChatRoomID int `json:"chatRoomID"`
 	CreaorID   int `json:"creaorID"`
-}
-
-type DeleteChat struct {
-	ChatRoomID int `json:"chatRoomID"`
-	MemberID   int `json:"memberID"`
 }
 
 type LeaveChatRoom struct {
@@ -93,16 +85,36 @@ type LeaveChatRoom struct {
 	MemberID   int `json:"memberID"`
 }
 
-type UpdateChatRoomDetail struct {
-	ChatRoomID   int     `json:"chatRoomID"`
-	ChatRoomName *string `json:"chatRoomName"`
-	UpdateByID   *int     `json:"updateByID"`
+type DeleteChat struct {
+	ChatRoomID int `json:"chatRoomID"`
+	MemberID   int `json:"memberID"`
+}
+
+type ChatConversation struct {
+	MessageID       int      `json:"messageId"`
+	ChatRoomID      int      `json:"chatRoomID"`
+	SenderID        int      `json:"senderID"`
+	Message         string      `json:"message"`
+	MessageType     MessageType `json:"messageType"`
+	MessageStatus   State       `json:"messageStatus"`
+	MessageParentID *int     `json:"messageParentId"`
+	CreatedAt       time.Time   `json:"createdAt"`
+	UpdatedAt       *time.Time  `json:"updatedAt"`
+}
+
+type NewMessage struct {
+	ChatRoomID      int      `json:"chatRoomID"`
+	SenderID        int      `json:"senderID"`
+	Message         string      `json:"message"`
+	MessageType     MessageType `json:"messageType"`
+	MessageParentID *int     `json:"messageParentId"`
+	MessageStatus   State       `json:"messageStatus"`
 }
 
 type UpdateMessage struct {
-	Message *string `json:"message"`
-	SenderID int	`json:"senderID"`
-	MessageID int 	`json:"messageID"`
+	Message   *string `json:"message"`
+	SenderID  int  `json:"senderID"`
+	MessageID int  `json:"messageID"`
 }
 
 type UpdateMessageStatus struct {

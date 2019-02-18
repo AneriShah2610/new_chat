@@ -32,7 +32,7 @@ models:
     model: github.com/aneri/new_chat/model.State
   ChatRoomType:
     model: github.com/aneri/new_chat/model.ChatRoomType
-  MessageType:  
+  MessageType:
     model: github.com/aneri/new_chat/model.MessageType
   DeleteChatRoom:
     model: github.com/aneri/new_chat/model.DeleteChatRoom
@@ -46,3 +46,5 @@ models:
     model: github.com/aneri/new_chat/model.UpdateMessage
   UpdateMessageStatus:
     model: github.com/aneri/new_chat/model.UpdateMessageStatus
+  UpdateUser:
+    model: github.com/aneri/new_chat/model.UpdateUser

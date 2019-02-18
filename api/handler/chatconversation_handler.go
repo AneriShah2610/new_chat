@@ -2,11 +2,15 @@ package handler
 
 import (
 	"context"
+	"database/sql"
 	"github.com/aneri/new_chat/api/dal"
 	"github.com/aneri/new_chat/model"
 	"log"
 )
-
+var addMessageResolver map[int]chan model.ChatConversation      // To add message in chatconversation table
+func init() {
+	addMessageResolver = map[int]chan model.ChatConversation{}
+}
 // Retrieve chat conversation by chatRoom Id
 func (r *queryResolver) ChatconversationByChatRoomID(ctx context.Context, chatRoomID int, memberID int)([]model.ChatConversation, error) {
 	crConn :=ctx.Value("crConn").(*dal.DbConnection)
@@ -101,12 +105,27 @@ func (r *mutationResolver) NewMessage(ctx context.Context, input model.NewMessag
 			MessageStatus: input.MessageStatus,
 		}
 	}
+
+	// add new chatconversation in observer
+	channelMsg := addMessageResolver[chatconversation.ChatRoomID]
+	if channelMsg != nil {
+		channelMsg <- chatconversation
+	}
 	return chatconversation, nil
 }
 
 // Live updates of new messages
 func (r *subscriptionResolver) MessagePost(ctx context.Context, chatRoomID int) (<-chan model.ChatConversation, error) {
-	panic("not implemented")
+
+	chatevent := make(chan model.ChatConversation, 1)
+	addMessageResolver[chatRoomID] = chatevent
+	go func() {
+		<-ctx.Done()
+		r.mu.Lock()
+		delete(addMessageResolver, chatRoomID)
+		r.mu.Unlock()
+	}()
+	return chatevent, nil
 }
 
 func (r *mutationResolver)UpdateMessage(ctx context.Context, input *model.UpdateMessage) (model.ChatConversation, error){
@@ -211,7 +230,7 @@ func checkMessageDetail(ctx context.Context, messageID int)(model.ChatConversati
 	var message model.ChatConversation
 	row := crConn.Db.QueryRow("SELECT chatroom_id, sender_id, message_type, message_parent_id, message_status, createat FROM chatconversation WHERE id = $1", messageID)
 	err := row.Scan(&message.ChatRoomID, &message.SenderID, &message.MessageType, &message.MessageParentID, &message.MessageStatus, &message.CreatedAt)
-	if err != nil{
+	if err != nil  && err != sql.ErrNoRows {
 		log.Println("Error to fetch sender_id by message_id", err)
 	}
 	return message, nil

@@ -5,6 +5,7 @@ import (
 	"github.com/aneri/new_chat/api/dal"
 	"github.com/aneri/new_chat/model"
 	"log"
+	er "github.com/aneri/new_chat/error"
 )
 
 func (r *mutationResolver) NewChatRoomMember(ctx context.Context, input model.NewChatRoomMember, receiverId *int) (model.Member, error) {
@@ -84,18 +85,16 @@ func (r *memberResolver) Member(ctx context.Context, obj *model.Member) (model.U
 	return  memberInfo, nil
 }
 
-func CheckMemberExistence(ctx context.Context, chatRoomId int, memberId int) (model.Member, error) {
+func CheckMemberExistence(ctx context.Context, chatRoomId int, memberId int) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	var member model.Member
-	rows, _ := crConn.Db.Query("SELECT id, chatroom_id, member_id, joinat,deleteat FROM members_test WHERE chatroom_id = $1 and member_id = $2", chatRoomId, memberId)
-	defer  rows.Close()
-	for rows.Next() {
-		err := rows.Scan(&member.ID, &member.ChatRoomID, &member.MemberID, &member.JoinAt,& member.DeleteAt)
-		if err != nil {
-			log.Println("Error to read member data as per chatroom id", err)
-		}
+	var isMemberExist bool
+	row := crConn.Db.QueryRow("SELECT true FROM members WHERE chatroom_id = $1 and member_id = $2", chatRoomId, memberId)
+	err := row.Scan(&isMemberExist)
+	if err != nil{
+		er.DebugPrintf(err)
+		return false, er.InternalServerError
 	}
-	return member, nil
+	return isMemberExist, nil
 }
 func CheckChatRoomTypeByChatID(ctx context.Context, chatRoomId int) (string, error){
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
