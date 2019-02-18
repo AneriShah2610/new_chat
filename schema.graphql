@@ -8,7 +8,7 @@ type User {
     bio: String
 	profilePicture: String
 	createdAt: Time!
-    updatedAt: Time!
+    updatedAt: Time
 }
 type ChatRoom {
 	chatRoomID: ID!
@@ -95,6 +95,7 @@ input UpdateMessage{
     message: String
     senderID: ID!
     messageID: ID!
+    chatRoomID: ID!
 }
 input UpdateMessageStatus{
     messageStatus: State!
@@ -116,6 +117,11 @@ input DeleteChatRoom{
     chatRoomID: ID!
     creaorID: ID!
 }
+input DeleteMessage{
+    chatRoomID: ID!
+    messageID: ID!
+    DeleteByID: ID!
+}
 type Subscription{
     userJoined: User!
     messagePost(chatRoomID: ID!): ChatConversation!
@@ -128,14 +134,14 @@ type Subscription{
 }
 type Mutation{
     newUser(input: NewUser!): User!
-    newChatRoom(input: NewChatRoom!, receiver: ID): ChatRoom!
-    newChatRoomMember(input: NewChatRoomMember!, receiverID: ID): Member!
+    newChatRoom(input: NewChatRoom!, receiverID: ID): ChatRoom!
+    newChatRoomMember(input: NewChatRoomMember!): Member!
     newMessage(input: NewMessage!, senderID: ID!): ChatConversation!
     updateMessage(input: UpdateMessage): ChatConversation!
     updateMessageStatus(input: UpdateMessageStatus!): ChatConversation!
-    deleteMessage(senderID: ID!, messageID: ID!): ChatConversation!
+    deleteMessage(input: DeleteMessage): ChatConversation!
     deleteChat(input: DeleteChat!): Member!
-    leaveChatRoom(input: LeaveChatRoom!, memberID: ID!): Member!
+    leaveChatRoom(input: LeaveChatRoom!): String!
     updateChatRoomDetail(input: UpdateChatRoomDetail!): ChatRoom!
     deleteChatRoom(input: DeleteChatRoom!): ChatRoom!
 }

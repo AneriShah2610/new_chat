@@ -3,9 +3,10 @@ package handler
 import (
 	"context"
 	"database/sql"
-	er "github.com/aneri/new_chat/error"
 	"math/rand"
 	"time"
+
+	er "github.com/aneri/new_chat/error"
 
 	"github.com/aneri/new_chat/api/dal"
 	"github.com/aneri/new_chat/api/helper"
@@ -24,7 +25,7 @@ func (r *queryResolver) Users(ctx context.Context, name string) ([]model.User, e
 	var users []model.User
 	var user model.User
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	rows, err := crConn.Db.Query("SELECT id, username, first_name, last_name, email, contact, bio, profile_picture, created_at, updated_at FROM users WHERE username != $1 ORDER BY name ASC", name)
+	rows, err := crConn.Db.Query("SELECT id, username, first_name, last_name, email, contact, bio, profile_picture, created_at, updated_at FROM users WHERE username != $1 ORDER BY username ASC", name)
 	if err != nil {
 		er.DebugPrintf(err)
 		return []model.User{}, er.InternalServerError
@@ -53,20 +54,20 @@ func (r *mutationResolver) NewUser(ctx context.Context, input model.NewUser) (mo
 		return model.User{}, er.InternalServerError
 	}
 	if !isUserExist {
-		row := crConn.Db.QueryRow("INSERT INTO users (username, first_name, last_name, email, contact, bio, profile_picture, created_at,) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id", input.UserName, *input.FirstName, *input.LastName, input.Email, input.Contact, input.Bio, input.ProfilePicture, time.Now())
+		row := crConn.Db.QueryRow("INSERT INTO users (username, first_name, last_name, email, contact, bio, profile_picture, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id", input.UserName, input.FirstName, input.LastName, input.Email, input.Contact, input.Bio, input.ProfilePicture, time.Now())
 		err = row.Scan(&user.ID)
-		if err != nil{
+		if err != nil {
 			er.DebugPrintf(err)
 			return model.User{}, er.InternalServerError
 		}
 	}
 	user = model.User{
-		Username: input.UserName,
-		FirstName: input.FirstName,
-		LastName: input.LastName,
-		Email: input.Email,
-		Contact: input.Contact,
-		Bio: input.Bio,
+		Username:       input.UserName,
+		FirstName:      input.FirstName,
+		LastName:       input.LastName,
+		Email:          input.Email,
+		Contact:        input.Contact,
+		Bio:            input.Bio,
 		ProfilePicture: input.ProfilePicture,
 	}
 	for _, observer := range addUserChannel {
@@ -95,7 +96,7 @@ func CheckUserExistence(ctx context.Context, userName string) (bool, error) {
 	row := crConn.Db.QueryRow("SELECT true FROM users WHERE usermname = $1", userName)
 
 	err := row.Scan(&isUserExist)
-	if err != nil && err == sql.ErrNoRows{
+	if err != nil && err == sql.ErrNoRows {
 		er.DebugPrintf(err)
 		return false, er.InternalServerError
 	}
