@@ -43,13 +43,12 @@ CREATE TABLE chatrooms (
 	FAMILY "primary" (id, creator_id, chatroom_name, chatroom_type, created_at, updated_by, updated_at, deleted_at, hashkey)
 );
 
-
 CREATE TABLE members (
 	id INT NOT NULL DEFAULT unique_rowid(),
 	chatroom_id INT NOT NULL,
 	member_id INT NOT NULL,
 	joined_at TIMESTAMP NOT NULL,
-	deleted_at TIMESTAMP NOT NULL,
+	deleted_at TIMESTAMP NULL,
 	CONSTRAINT "primary" PRIMARY KEY (id ASC),
 	CONSTRAINT fk_chatroom_id_ref_chatrooms FOREIGN KEY (chatroom_id) REFERENCES chatrooms (id) ON DELETE CASCADE,
 	INDEX members_auto_index_fk_chatroom_id_ref_chatrooms (chatroom_id ASC),
@@ -58,7 +57,6 @@ CREATE TABLE members (
 	FAMILY "primary" (id, chatroom_id, member_id, joined_at, deleted_at)
 );
 
-
 CREATE TABLE chatconversation (
 	id INT NOT NULL DEFAULT unique_rowid(),
 	chatroom_id INT NOT NULL,
@@ -66,7 +64,7 @@ CREATE TABLE chatconversation (
 	message STRING NOT NULL,
 	message_type STRING NOT NULL,
 	message_status STRING NOT NULL,
-	message_parent_id INT NOT NULL,
+	message_parent_id INT NULL,
 	created_at TIMESTAMP NOT NULL,
 	updatedat TIMESTAMP NULL DEFAULT NULL,
 	CONSTRAINT "primary" PRIMARY KEY (id ASC),

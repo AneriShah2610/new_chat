@@ -81,14 +81,14 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		NewUser              func(childComplexity int, input model.NewUser) int
-		NewChatRoom          func(childComplexity int, input model.NewChatRoom, receiver *int) int
-		NewChatRoomMember    func(childComplexity int, input model.NewChatRoomMember, receiverID *int) int
+		NewChatRoom          func(childComplexity int, input model.NewChatRoom, receiverID *int) int
+		NewChatRoomMember    func(childComplexity int, input model.NewChatRoomMember) int
 		NewMessage           func(childComplexity int, input model.NewMessage, senderID int) int
 		UpdateMessage        func(childComplexity int, input *model.UpdateMessage) int
 		UpdateMessageStatus  func(childComplexity int, input model.UpdateMessageStatus) int
-		DeleteMessage        func(childComplexity int, senderID int, messageID int) int
+		DeleteMessage        func(childComplexity int, input *model.DeleteMessage) int
 		DeleteChat           func(childComplexity int, input model.DeleteChat) int
-		LeaveChatRoom        func(childComplexity int, input model.LeaveChatRoom, memberID int) int
+		LeaveChatRoom        func(childComplexity int, input model.LeaveChatRoom) int
 		UpdateChatRoomDetail func(childComplexity int, input model.UpdateChatRoomDetail) int
 		DeleteChatRoom       func(childComplexity int, input model.DeleteChatRoom) int
 	}
@@ -141,14 +141,14 @@ type MemberResolver interface {
 }
 type MutationResolver interface {
 	NewUser(ctx context.Context, input model.NewUser) (model.User, error)
-	NewChatRoom(ctx context.Context, input model.NewChatRoom, receiver *int) (model.ChatRoom, error)
-	NewChatRoomMember(ctx context.Context, input model.NewChatRoomMember, receiverID *int) (model.Member, error)
+	NewChatRoom(ctx context.Context, input model.NewChatRoom, receiverID *int) (model.ChatRoom, error)
+	NewChatRoomMember(ctx context.Context, input model.NewChatRoomMember) (model.Member, error)
 	NewMessage(ctx context.Context, input model.NewMessage, senderID int) (model.ChatConversation, error)
 	UpdateMessage(ctx context.Context, input *model.UpdateMessage) (model.ChatConversation, error)
 	UpdateMessageStatus(ctx context.Context, input model.UpdateMessageStatus) (model.ChatConversation, error)
-	DeleteMessage(ctx context.Context, senderID int, messageID int) (model.ChatConversation, error)
+	DeleteMessage(ctx context.Context, input *model.DeleteMessage) (model.ChatConversation, error)
 	DeleteChat(ctx context.Context, input model.DeleteChat) (model.Member, error)
-	LeaveChatRoom(ctx context.Context, input model.LeaveChatRoom, memberID int) (model.Member, error)
+	LeaveChatRoom(ctx context.Context, input model.LeaveChatRoom) (string, error)
 	UpdateChatRoomDetail(ctx context.Context, input model.UpdateChatRoomDetail) (model.ChatRoom, error)
 	DeleteChatRoom(ctx context.Context, input model.DeleteChatRoom) (model.ChatRoom, error)
 }
@@ -197,7 +197,7 @@ func field_Mutation_newChatRoom_args(rawArgs map[string]interface{}) (map[string
 	}
 	args["input"] = arg0
 	var arg1 *int
-	if tmp, ok := rawArgs["receiver"]; ok {
+	if tmp, ok := rawArgs["receiverID"]; ok {
 		var err error
 		var ptr1 int
 		if tmp != nil {
@@ -209,7 +209,7 @@ func field_Mutation_newChatRoom_args(rawArgs map[string]interface{}) (map[string
 			return nil, err
 		}
 	}
-	args["receiver"] = arg1
+	args["receiverID"] = arg1
 	return args, nil
 
 }
@@ -225,20 +225,6 @@ func field_Mutation_newChatRoomMember_args(rawArgs map[string]interface{}) (map[
 		}
 	}
 	args["input"] = arg0
-	var arg1 *int
-	if tmp, ok := rawArgs["receiverID"]; ok {
-		var err error
-		var ptr1 int
-		if tmp != nil {
-			ptr1, err = model.UnmarshalID(tmp)
-			arg1 = &ptr1
-		}
-
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["receiverID"] = arg1
 	return args, nil
 
 }
@@ -304,24 +290,20 @@ func field_Mutation_updateMessageStatus_args(rawArgs map[string]interface{}) (ma
 
 func field_Mutation_deleteMessage_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["senderID"]; ok {
+	var arg0 *model.DeleteMessage
+	if tmp, ok := rawArgs["input"]; ok {
 		var err error
-		arg0, err = model.UnmarshalID(tmp)
+		var ptr1 model.DeleteMessage
+		if tmp != nil {
+			ptr1, err = UnmarshalDeleteMessage(tmp)
+			arg0 = &ptr1
+		}
+
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["senderID"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["messageID"]; ok {
-		var err error
-		arg1, err = model.UnmarshalID(tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["messageID"] = arg1
+	args["input"] = arg0
 	return args, nil
 
 }
@@ -352,15 +334,6 @@ func field_Mutation_leaveChatRoom_args(rawArgs map[string]interface{}) (map[stri
 		}
 	}
 	args["input"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["memberID"]; ok {
-		var err error
-		arg1, err = model.UnmarshalID(tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["memberID"] = arg1
 	return args, nil
 
 }
@@ -849,7 +822,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.NewChatRoom(childComplexity, args["input"].(model.NewChatRoom), args["receiver"].(*int)), true
+		return e.complexity.Mutation.NewChatRoom(childComplexity, args["input"].(model.NewChatRoom), args["receiverID"].(*int)), true
 
 	case "Mutation.newChatRoomMember":
 		if e.complexity.Mutation.NewChatRoomMember == nil {
@@ -861,7 +834,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.NewChatRoomMember(childComplexity, args["input"].(model.NewChatRoomMember), args["receiverID"].(*int)), true
+		return e.complexity.Mutation.NewChatRoomMember(childComplexity, args["input"].(model.NewChatRoomMember)), true
 
 	case "Mutation.newMessage":
 		if e.complexity.Mutation.NewMessage == nil {
@@ -909,7 +882,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteMessage(childComplexity, args["senderID"].(int), args["messageID"].(int)), true
+		return e.complexity.Mutation.DeleteMessage(childComplexity, args["input"].(*model.DeleteMessage)), true
 
 	case "Mutation.deleteChat":
 		if e.complexity.Mutation.DeleteChat == nil {
@@ -933,7 +906,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.LeaveChatRoom(childComplexity, args["input"].(model.LeaveChatRoom), args["memberID"].(int)), true
+		return e.complexity.Mutation.LeaveChatRoom(childComplexity, args["input"].(model.LeaveChatRoom)), true
 
 	case "Mutation.updateChatRoomDetail":
 		if e.complexity.Mutation.UpdateChatRoomDetail == nil {
@@ -2227,7 +2200,7 @@ func (ec *executionContext) _Mutation_newChatRoom(ctx context.Context, field gra
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().NewChatRoom(rctx, args["input"].(model.NewChatRoom), args["receiver"].(*int))
+		return ec.resolvers.Mutation().NewChatRoom(rctx, args["input"].(model.NewChatRoom), args["receiverID"].(*int))
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -2257,7 +2230,7 @@ func (ec *executionContext) _Mutation_newChatRoomMember(ctx context.Context, fie
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().NewChatRoomMember(rctx, args["input"].(model.NewChatRoomMember), args["receiverID"].(*int))
+		return ec.resolvers.Mutation().NewChatRoomMember(rctx, args["input"].(model.NewChatRoomMember))
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -2377,7 +2350,7 @@ func (ec *executionContext) _Mutation_deleteMessage(ctx context.Context, field g
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteMessage(rctx, args["senderID"].(int), args["messageID"].(int))
+		return ec.resolvers.Mutation().DeleteMessage(rctx, args["input"].(*model.DeleteMessage))
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -2437,7 +2410,7 @@ func (ec *executionContext) _Mutation_leaveChatRoom(ctx context.Context, field g
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().LeaveChatRoom(rctx, args["input"].(model.LeaveChatRoom), args["memberID"].(int))
+		return ec.resolvers.Mutation().LeaveChatRoom(rctx, args["input"].(model.LeaveChatRoom))
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -2445,10 +2418,9 @@ func (ec *executionContext) _Mutation_leaveChatRoom(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(model.Member)
+	res := resTmp.(string)
 	rctx.Result = res
-
-	return ec._Member(ctx, field.Selections, &res)
+	return graphql.MarshalString(res)
 }
 
 // nolint: vetshadow
@@ -3251,9 +3223,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "updatedAt":
 			out.Values[i] = ec._User_updatedAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalid = true
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3490,14 +3459,15 @@ func (ec *executionContext) _User_updatedAt(ctx context.Context, field graphql.C
 		return obj.UpdatedAt, nil
 	})
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(time.Time)
+	res := resTmp.(*time.Time)
 	rctx.Result = res
-	return graphql.MarshalTime(res)
+
+	if res == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalTime(*res)
 }
 
 var __DirectiveImplementors = []string{"__Directive"}
@@ -4857,6 +4827,36 @@ func UnmarshalDeleteChatRoom(v interface{}) (model.DeleteChatRoom, error) {
 	return it, nil
 }
 
+func UnmarshalDeleteMessage(v interface{}) (model.DeleteMessage, error) {
+	var it model.DeleteMessage
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "chatRoomID":
+			var err error
+			it.ChatRoomID, err = model.UnmarshalID(v)
+			if err != nil {
+				return it, err
+			}
+		case "messageID":
+			var err error
+			it.MessageID, err = model.UnmarshalID(v)
+			if err != nil {
+				return it, err
+			}
+		case "DeleteByID":
+			var err error
+			it.DeleteByID, err = model.UnmarshalID(v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func UnmarshalLeaveChatRoom(v interface{}) (model.LeaveChatRoom, error) {
 	var it model.LeaveChatRoom
 	var asMap = v.(map[string]interface{})
@@ -5035,7 +5035,12 @@ func UnmarshalNewUser(v interface{}) (model.NewUser, error) {
 			}
 		case "contact":
 			var err error
-			it.Contact, err = graphql.UnmarshalString(v)
+			var ptr1 string
+			if v != nil {
+				ptr1, err = graphql.UnmarshalString(v)
+				it.Contact = &ptr1
+			}
+
 			if err != nil {
 				return it, err
 			}
@@ -5136,6 +5141,12 @@ func UnmarshalUpdateMessage(v interface{}) (model.UpdateMessage, error) {
 			if err != nil {
 				return it, err
 			}
+		case "chatRoomID":
+			var err error
+			it.ChatRoomID, err = model.UnmarshalID(v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -5230,20 +5241,20 @@ func (ec *executionContext) introspectType(name string) *introspection.Type {
 
 var parsedSchema = gqlparser.MustLoadSchema(
 	&ast.Source{Name: "schema.graphql", Input: `type User {
-	id: ID!
-	userName: String!
+    id: ID!
+    userName: String!
     firstName: String
     lastName: String
-	email: String!
-	contact: String
+    email: String!
+    contact: String
     bio: String
-	profilePicture: String
-	createdAt: Time!
-    updatedAt: Time!
+    profilePicture: String
+    createdAt: Time!
+    updatedAt: Time
 }
 type ChatRoom {
-	chatRoomID: ID!
-	creatorID: ID!
+    chatRoomID: ID!
+    creatorID: ID!
     creator: User!
     chatRoomName: String
     chatRoomType: ChatRoomType!
@@ -5298,7 +5309,7 @@ input NewUser{
     email: String!
     contact: String
     profilePicture: String
-	bio: String
+    bio: String
 }
 input NewChatRoom{
     creatorID: ID!
@@ -5315,7 +5326,7 @@ input NewMessage{
     message: String!
     messageType: MessageType!
     messageParentId: ID
-    messageStatus: State!   
+    messageStatus: State!
 }
 input UpdateUser{
     userName: String
@@ -5326,6 +5337,7 @@ input UpdateMessage{
     message: String
     senderID: ID!
     messageID: ID!
+    chatRoomID: ID!
 }
 input UpdateMessageStatus{
     messageStatus: State!
@@ -5347,6 +5359,11 @@ input DeleteChatRoom{
     chatRoomID: ID!
     creaorID: ID!
 }
+input DeleteMessage{
+    chatRoomID: ID!
+    messageID: ID!
+    DeleteByID: ID!
+}
 type Subscription{
     userJoined: User!
     messagePost(chatRoomID: ID!): ChatConversation!
@@ -5359,14 +5376,14 @@ type Subscription{
 }
 type Mutation{
     newUser(input: NewUser!): User!
-    newChatRoom(input: NewChatRoom!, receiver: ID): ChatRoom!
-    newChatRoomMember(input: NewChatRoomMember!, receiverID: ID): Member!
+    newChatRoom(input: NewChatRoom!, receiverID: ID): ChatRoom!
+    newChatRoomMember(input: NewChatRoomMember!): Member!
     newMessage(input: NewMessage!, senderID: ID!): ChatConversation!
     updateMessage(input: UpdateMessage): ChatConversation!
     updateMessageStatus(input: UpdateMessageStatus!): ChatConversation!
-    deleteMessage(senderID: ID!, messageID: ID!): ChatConversation!
+    deleteMessage(input: DeleteMessage): ChatConversation!
     deleteChat(input: DeleteChat!): Member!
-    leaveChatRoom(input: LeaveChatRoom!, memberID: ID!): Member!
+    leaveChatRoom(input: LeaveChatRoom!): String!
     updateChatRoomDetail(input: UpdateChatRoomDetail!): ChatRoom!
     deleteChatRoom(input: DeleteChatRoom!): ChatRoom!
 }
@@ -5377,6 +5394,5 @@ type Query{
     memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): [Member!]!
     chatRoomListByMemberId(memberId: ID!): [ChatRoom!]!
 }
-scalar Time
-`},
+scalar Time`},
 )

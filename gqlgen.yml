@@ -48,3 +48,5 @@ models:
     model: github.com/aneri/new_chat/model.UpdateMessageStatus
   UpdateUser:
     model: github.com/aneri/new_chat/model.UpdateUser
+  DeleteMessage:
+    model: github.com/aneri/new_chat/model.DeleteMessage
