@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/aneri/new_chat/api/dal"
 	"github.com/aneri/new_chat/model"
 	er "github.com/aneri/new_chat/error"
@@ -229,6 +230,15 @@ func (r *mutationResolver) DeleteMessage(ctx context.Context, input *model.Delet
 				er.DebugPrintf(err)
 				return model.ChatConversation{}, er.InternalServerError
 			}
+		}
+		channelMsg := addMessageResolver[input.ChatRoomID]
+		if channelMsg != nil {
+			//msgs := <- channelMsg
+			fmt.Println(channelMsg)
+			/*if msgs.MessageID == input.MessageID {
+
+			} */
+			channelMsg <- chatconversation
 		}
 	}
 	return chatconversation, nil

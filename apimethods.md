@@ -4,74 +4,83 @@
    ```
    mutation{
      newUser(input:{
-       name:"xyz",
-       email:"xyz@gmail.com",
+       userName:"ABCDEFGH",
+       firstName:"ABC",
+       lastName:"DEF",
+       email:"abcdefgh@gmailcom"
        contact:"0123456789",
-       profilePicture:"xyz"
-       bio:"xyz"
+       bio:"XXXXXX"
      }){
-       name
+       id
+       userName
+       firstName
+       lastName
        email
        contact
-       profilePicture
        bio
+       profilePicture
        createdAt
      }
    }
    ```
 2) Retrieve All Users Details Except Own:
     ```
-    query{
-      users(name:"xyz"){
-        id
-        name
-        email
-        contact
-        profilePicture
-        bio
-        createdAt
-      }
-    }
+   query{
+     users(name:"XYZ"){
+      id
+       userName
+       firstName
+       lastName
+       email
+       contact
+       bio
+       profilePicture
+       createdAt
+     }
+   }
     ```
 3) Get Live Update For New User Join:
     ```
-    subscription{
-      userJoined{
-        id
-        name
-        email
-        contact
-        profilePicture
-        bio
-        createdAt
-      }
-    }
+   subscription{
+     userJoined{
+       id
+       userName
+       firstName
+       lastName
+       email
+       contact
+       bio
+       profilePicture
+       createdAt
+     }
+   }
     ``` 
 4) Create New ChatRoom:
     ```
-    mutation{
-      newChatRoom(input:{
-        creatorID:"84851515",
-        chatRoomType:PRIVATE/GROUP
-      },receiver:"48485454"){
-        creatorID
-        chatRoomID
-        creator{
-          name
-          email
-          contact
-          profilePicture
-          bio
-          createdAt
-        }
-        chatRoomName
-        chatRoomType
-        createdAt
-      }
-    }
+   mutation{
+     newChatRoom(input:{
+       creatorID:"0123456789",
+       chatRoomType:PRIVATE/GROUP
+     },receiverID:"98547562145"){
+       chatRoomID
+       creatorID
+       creator{
+         id
+         userName
+         firstName
+         lastName
+         email
+         contact
+         bio
+       }
+       chatRoomName
+       chatRoomType
+       createdAt
+     }
+   }
     ```
-    For private chat you have to add receiver but for group chat there is no need of receiver but it is 
-    mandatory to write  chatroom name otherwise it send null name 
+    For private chat you have to add receiverID but for group chat there is no need of receiver but it is 
+    mandatory to write chatroom name otherwise it send null name 
 5) Retrieve All ChatRoom:
     ```
     query{
@@ -80,10 +89,13 @@
         creatorID
         creator{
           id
-          name
+          userName
+          firstName
+          lastName
           email
           contact
           bio
+          profilePicture
           createdAt
         }
         chatRoomName
@@ -91,103 +103,107 @@
         members{
           id
           chatRoomID
+          member{
+            id
+            userName
+            firstName
+            lastName
+            email
+            contact
+            bio
+            profilePicture
+            createdAt
+          }
           joinAt
         }
         createdAt
       }
     }
     ```
-6) Add Member in Private ChatRoom:
+6) Add Member in Group ChatRoom:
     ```
-    mutation{
-      newChatRoomMember(input:{
-        chatRoomID:"848451",
-        memberID:"484515"
-      },receiverId:"451515"){
+  mutation{
+    newChatRoomMember(input:{
+      chatRoomID:"0123456789",
+      memberID:"0123456789"
+    }){
+      id
+      chatRoomID
+      member{
         id
-        chatRoomID
-        joinAt
+        userName
+        firstName
+        lastName
+        email
+        contact
+        bio
+        profilePicture
+        createdAt
       }
+      joinAt
     }
+  }
     ```
-7) Add Member in Group ChatRoom:
+ 7) Retrieve ChatConversation by particular ChatRoom:
     ```
-   mutation{
-     newChatRoomMember(input:{
-       chatRoomID:"0123456789",
-       memberID:"9876543210",
-     }){
-       id
+   query{
+     chatconversationByChatRoomId(chatRoomID:"0123456789",memberID:"0123456789"){
+       messageId
        chatRoomID
-       member{
+       senderID
+       sender{
          id
-         name
+         userName
+         firstName
+         lastName
        }
-       joinAt
+       message
+       messageType
+       messageStatus
+       messageParentId
+       createdAt
      }
    }
     ```
- 8) Retrieve ChatConversation by particular ChatRoom:
+8) Add Message in ChatRoom:
     ```
-    query{
-      chatconversationByChatRoomId(chatRoomID:"0123456789",memberID:"987456310"){
-        chatRoomID
-        senderId
-        sender{
-          id
-          name
-          email
-          contact
-          profilePicture
-          bio
-        }
+   mutation{
+     newMessage(input:{
+       chatRoomID:"0123456789",
+       senderID:"98745462145",
+       message:"XYZZZ",
+       messageType:TEXT/IMAGE/VIDEO/GIF/AUDIO,
+       messageStatus:SEND/UNREAD/READ
+     },senderID:"15485451"){
+       messageId
+       chatRoomID
+       senderID
+       sender{
+         id
+         userName
+         firstName
+         lastName
+         email
+         contact
+       }
         message
         messageType
+        messageStatus
+        messageParentId
         createdAt
-        updatedAt
-      }
-    }
+     }
+   }
     ```
-9) Add Message in ChatRoom:
+9) Delete Chat By Particular MemberID:
     ```
     mutation{
-      newMessage(input:{
-        chatRoomID:"0123456789",
-        senderId: "9874563210",
-        message:"XXXX",
-        messageType:TEXT/IMAGE/VIDEO/GIF,
-        messageStatus:SEND
-      },senderID:"875456892145"){
+      deleteChat(input:{
+        chatRoomID:"0123456",
+        memberID:"8745210"
+      }){
+        id
         chatRoomID
-        senderId
-        sender{
-          name 
-          email
-          contact
-          profilePicture
-        }
-        message
-        messageType
-        messageStatus
-        createdAt
-      }
-    }
-    ```
-10) Delete Chat by Particular memberId:
-    ```
-    query{
-      chatconversationByChatRoomId(chatRoomID:"0123456789",memberID:"9876543210"){
-        chatRoomID
-        senderId
-        sender{
-          name
-          email
-          contact
-        }
-        message
-        messageType
-        messageStatus
-        createdAt
+        joinAt
       }
     }
     ```

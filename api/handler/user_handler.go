@@ -94,7 +94,7 @@ func (r *subscriptionResolver) UserJoined(ctx context.Context) (<-chan model.Use
 func CheckUserExistence(ctx context.Context, userName string) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var isUserExist bool
-	row := crConn.Db.QueryRow("SELECT true FROM users WHERE usermname = $1", userName)
+	row := crConn.Db.QueryRow("SELECT true FROM users WHERE username = $1", userName)
 
 	err := row.Scan(&isUserExist)
 	if err != nil && err != sql.ErrNoRows {
