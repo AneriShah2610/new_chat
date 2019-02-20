@@ -3,18 +3,19 @@ package handler
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"github.com/aneri/new_chat/api/dal"
-	"github.com/aneri/new_chat/model"
 	er "github.com/aneri/new_chat/error"
+	"github.com/aneri/new_chat/model"
 	"time"
 )
 var addMessageResolver map[int]chan model.ChatConversation // To add message in chatconversation table
 var updateMessageResolver map[int]chan model.ChatConversation
+var deleteMessageResolver map[int]chan model.ChatConversation
 
 func init() {
 	addMessageResolver = map[int]chan model.ChatConversation{}
 	updateMessageResolver = map[int]chan model.ChatConversation{}
+	deleteMessageResolver = map[int]chan model.ChatConversation{}
 }
 
 // Retrieve chat conversation by chatRoom Id
@@ -231,21 +232,24 @@ func (r *mutationResolver) DeleteMessage(ctx context.Context, input *model.Delet
 				return model.ChatConversation{}, er.InternalServerError
 			}
 		}
-		channelMsg := addMessageResolver[input.ChatRoomID]
-		if channelMsg != nil {
-			//msgs := <- channelMsg
-			fmt.Println(channelMsg)
-			/*if msgs.MessageID == input.MessageID {
-
-			} */
-			channelMsg <- chatconversation
-		}
+	}
+	channelMsg := deleteMessageResolver[input.ChatRoomID]
+	if channelMsg != nil {
+		channelMsg <- chatconversation
 	}
 	return chatconversation, nil
 }
 
 func (r *subscriptionResolver) MessageDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatConversation, error) {
-	panic("not implemented")
+	chatevent := make(chan model.ChatConversation, 1)
+	deleteMessageResolver[chatRoomID] = chatevent
+	go func() {
+		<-ctx.Done()
+		r.mu.Lock()
+		delete(deleteMessageResolver, chatRoomID)
+		r.mu.Unlock()
+	}()
+	return chatevent, nil
 }
 
 func (r *chatConversationResolver) Sender(ctx context.Context, obj *model.ChatConversation) (model.User, error) {
