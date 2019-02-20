@@ -3,11 +3,15 @@ package handler
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/aneri/new_chat/api/dal"
 	er "github.com/aneri/new_chat/error"
 	"github.com/aneri/new_chat/model"
+	"github.com/jmoiron/sqlx"
+	"log"
 	"time"
 )
+
 var addMessageResolver map[int]chan model.ChatConversation // To add message in chatconversation table
 var updateMessageResolver map[int]chan model.ChatConversation
 var deleteMessageResolver map[int]chan model.ChatConversation
@@ -98,11 +102,59 @@ func (r *queryResolver) MemberListByChatRoomID(ctx context.Context, chatRoomID i
 	return members, nil
 }
 
-func (r *queryResolver) ChatRoomListByMemberID(ctx context.Context, memberId int) ([]model.ChatRoom, error) {
-	//crConn := ctx.Value("crconn").(*dal.DbConnection)
-	//var chatroom model.ChatRoom
-	//var chatrooms []model.ChatRoom
-	//rows, err := crConn.Db.
+func (r *queryResolver) ChatRoomListByMemberID(ctx context.Context, memberID int) ([]model.ChatRoomList, error) {
+	crConn := ctx.Value("crConn").(*dal.DbConnection)
+	var chatroom model.ChatRoom
+	var chatroomarr []model.ChatRoom
+	var userarr []model.User
+	var user model.User
+	var chatRoomIds []int
+	rows, err := crConn.Db.Query("SELECT DISTINCT(chatrooms.id),chatrooms.chatroom_type,chatroom_name FROM members JOIN chatrooms ON members.chatroom_id = chatrooms.id JOIN chatconversation ON chatconversation.chatroom_id = members.chatroom_id WHERE members.member_id = $1 ORDER BY chatconversation.created_at DESC", memberID)
+	if err != nil {
+		er.DebugPrintf(err)
+		return []model.ChatRoomList{}, er.InternalServerError
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err := rows.Scan(&chatroom.ChatRoomID, &chatroom.ChatRoomType, &chatroom.ChatRoomName)
+		if err != nil {
+			er.DebugPrintf(err)
+			return []model.ChatRoomList{}, er.InternalServerError
+		}
+		chatroomarr = append(chatroomarr, chatroom)
+	}
+	// Risky Code
+	for _, i := range chatroomarr {
+		if i.ChatRoomType == "PRIVATE" {
+			chatRoomIds = append(chatRoomIds, i.ChatRoomID)
+		}
+	}
+	chatroomDetails := fmt.Sprintf("SELECT users.id, username FROM users JOIN members ON members.member_id = users.id where members.chatroom_id IN (?) and members.member_id != ?")
+	sqlQuery, arguments, err := sqlx.In(chatroomDetails, chatRoomIds, memberID)
+	if err != nil {
+		er.DebugPrintf(err)
+		return []model.ChatRoomList{}, er.InternalServerError
+	}
+	sqlQuery = sqlx.Rebind(sqlx.DOLLAR, sqlQuery)
+	rows, err = crConn.Db.Query(sqlQuery, arguments...)
+	if err != nil {
+		er.DebugPrintf(err)
+		return []model.ChatRoomList{}, er.InternalServerError
+	}
+	//defer rows.Close()
+	for rows.Next() {
+		err := rows.Scan(&user.ID, &user.Username)
+		if err != nil {
+			er.DebugPrintf(err)
+			return []model.ChatRoomList{}, er.InternalServerError
+		}
+		userarr = append(userarr, user)
+	}
+	log.Println(userarr)
+	// Risky Code End
+	return chatroomarr, nil
+}
+func (r *subscriptionResolver) ChatRoomListByMember(ctx context.Context, memberID int) (<-chan model.ChatRoom, error) {
 	panic("not implemented")
 }
 
@@ -276,7 +328,7 @@ func ChehckDeleteFlag(ctx context.Context, chatRoomID int, memberID int) (*time.
 	var member model.Member
 	row := crConn.Db.QueryRow("SELECT deleted_at FROM members WHERE chatroom_id = $1 AND member_id = $2", chatRoomID, memberID)
 	err := row.Scan(&member.DeleteAt)
-	if err != nil && err != sql.ErrNoRows{
+	if err != nil && err != sql.ErrNoRows {
 		er.DebugPrintf(err)
 		return nil, er.InternalServerError
 	}

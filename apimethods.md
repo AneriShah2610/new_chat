@@ -207,45 +207,57 @@
       }
     }
     ```
-11) Leave ChatRoom From Group: 
+10) Leave ChatRoom From Group: 
     ```
     mutation{
       leaveChatRoom(input:{
-        chatRoomID:"012345",
-        memberID:"214568"
-      },memberID:"214568"){
-        id
-        chatRoomID
-      }
+        chatRoomID:"013466789",
+        memberID:"8745321457"
+      })
     }
     ```
-12) Update ChatRoom Details:
+11) Update ChatRoom Details:
     ```
     mutation{
       updateChatRoomDetail(input:{
-        chatRoomID:"0123456789",
-        chatRoomName:"XYZXYZ",
-        updateByID: "0123456789"
+        chatRoomID:"123456",
+        chatRoomName:"XXXX",
+        updateByID:"0123456789"
       }){
         chatRoomID
+        creatorID
         creator{
-          name
+          id
+          userName
+          firstName
+          lastName
           email
           contact
           bio
+          createdAt
         }
+        members{
+          id
+          member{
+            id
+            userName
+            firstName
+            lastName
+          }
+        }
+        chatRoomName
+        chatRoomType
         updateByID
         updateBy{
-          id
-          name 
+          userName
+          firstName
+          lastName
           email
-          contact
-          bio
         }
       }
     }
     ```
-13) View MemberList By ChatRoom:
+12) View MemberList By ChatRoom:
     ```
     query{
       memberListByChatRoomId(chatRoomID:"012456789",memberID:"4578954120"){
@@ -261,58 +273,124 @@
       }
     }
     ```
-14) View ChatRoomList By MemberId:
+13) View ChatRoomList By MemberId:
     ```
-    
+    query{
+      chatRoomListByMemberId(memberID:"0123456789"){
+        chatRoomID
+        chatRoomName
+        chatRoomType
+      }
+    }
     ```
-15) Update Message(only sender can update message):
+14) Update Message(only sender can update message):
     ```
     mutation{
       updateMessage(input:{
-        senderID:"012465788",
-        messageID:"458451212",
-        message:"xyvxxxx"
+        message:"XXX",
+        senderID:"0123456789",
+        messageID:"0123456789",
+        chatRoomID:"0123456789"
       }){
         messageId
         chatRoomID
-        senderId
+        senderID
+        message
+        messageType
+      }
+    }
+    ```
+15) Delete Message(only sender can delete message):
+    ```
+    mutation{
+      deleteMessage(input:{
+        chatRoomID:"84854",
+        messageID:"1546",
+        DeleteByID:"7447"
+      }){
+        messageId
+        chatRoomID
+        senderID
+        message
+        messageType
+      }
+    }
+    ```
+16) Live Message Post:
+    ```
+    subscription{
+      messagePost(chatRoomID:"123456789"){
+        messageId
+        chatRoomID
+        senderID
         sender{
-          name
+          id
+          userName
+          firstName
+          lastName
           email
           contact
+          bio
+          profilePicture
         }
         message
         messageType
-        messageParentId
         messageStatus
         createdAt
-        updatedAt
       }
     }
     ```
-16) Delete Message(only sender can delete message):
+17) Live Update Of Message:
     ```
-    mutation{
-      deleteMessage(senderID:"0123456",messageID:"0000000000"){
+     subscription{
+          messageUpdate(chatRoomID:"123456789"){
+            messageId
+            chatRoomID
+            senderID
+            sender{
+              id
+              userName
+              firstName
+              lastName
+              email
+              contact
+              bio
+              profilePicture
+            }
+            message
+            messageType
+            messageStatus
+            createdAt
+          }
+        }
+    ```
+18) Live Delete Of Message:
+    ```
+    subscription{
+      messageDelete(chatRoomID:"123456789"){
         messageId
         chatRoomID
+        senderID
+        sender{
+          id
+          userName
+          firstName
+          lastName
+          email
+          contact
+          bio
+          profilePicture
+        }
         message
+        messageType
+        messageStatus
+        createdAt
       }
     }
     ```
-17) Live Message Post:
-    ```
-    
-    ```
-18) Live Update Of Message:
+19) Live update of ChatRoom:
     ```
     ```
-19) Live Update Of Message:
-    ```
-    ```
-20) Live update of ChatRoom:
-    ```
-    ```
-21) Live Update of ChatRoom Delete:
+20) Live Update of ChatRoom Delete:
     ```
     ```

@@ -121,6 +121,12 @@ type DeleteMessage struct {
 	MessageID  int `json:"messageID"`
 	DeleteByID int `json:"DeleteByID"`
 }
+type ChatRoomList struct {
+	ChatRoomID   int    `json:"chatRoomID"`
+	MemberName   string `json:"memberName"`
+	ChatRoomName string `json:"chatRoomName"`
+	ChatRoomType string `json:"chatRoomType"`
+}
 
 type UpdateMessageStatus struct {
 	MessageStatus State `json:"messageStatus"`

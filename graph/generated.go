@@ -71,6 +71,13 @@ type ComplexityRoot struct {
 		DeleteAt     func(childComplexity int) int
 	}
 
+	ChatRoomList struct {
+		ChatRoomId   func(childComplexity int) int
+		MemberName   func(childComplexity int) int
+		ChatRoomName func(childComplexity int) int
+		ChatRoomType func(childComplexity int) int
+	}
+
 	Member struct {
 		Id         func(childComplexity int) int
 		ChatRoomId func(childComplexity int) int
@@ -98,18 +105,21 @@ type ComplexityRoot struct {
 		ChatRooms                    func(childComplexity int) int
 		ChatconversationByChatRoomId func(childComplexity int, chatRoomID int, memberID int) int
 		MemberListByChatRoomId       func(childComplexity int, chatRoomID int, memberID int) int
-		ChatRoomListByMemberId       func(childComplexity int, memberId int) int
+		ChatRoomListByMemberId       func(childComplexity int, memberID int) int
 	}
 
 	Subscription struct {
-		UserJoined           func(childComplexity int) int
-		MessagePost          func(childComplexity int, chatRoomID int) int
-		MessageStatusUpdate  func(childComplexity int, messageID int, chatRoomID int) int
-		MessageUpdate        func(childComplexity int, chatRoomID int) int
-		MessageDelete        func(childComplexity int, chatRoomID int) int
-		ChatRoomLeave        func(childComplexity int, chatRoomID int) int
-		ChatRoomDetailUpdate func(childComplexity int, chatRoomID int) int
-		ChatRoomDelete       func(childComplexity int, chatRoomID int) int
+		UserJoined             func(childComplexity int) int
+		MessagePost            func(childComplexity int, chatRoomID int) int
+		MessageStatusUpdate    func(childComplexity int, messageID int, chatRoomID int) int
+		MessageUpdate          func(childComplexity int, chatRoomID int) int
+		MessageDelete          func(childComplexity int, chatRoomID int) int
+		ChatRoomLeave          func(childComplexity int, chatRoomID int) int
+		ChatRoomDetailUpdate   func(childComplexity int, chatRoomID int) int
+		ChatRoomDelete         func(childComplexity int, chatRoomID int) int
+		ChatDelete             func(childComplexity int, chatRoomID int) int
+		AddNewMemberInChatRoom func(childComplexity int, chatRoomID int) int
+		ChatRoomListByMember   func(childComplexity int, memberID int) int
 	}
 
 	User struct {
@@ -157,7 +167,7 @@ type QueryResolver interface {
 	ChatRooms(ctx context.Context) ([]model.ChatRoom, error)
 	ChatconversationByChatRoomID(ctx context.Context, chatRoomID int, memberID int) ([]model.ChatConversation, error)
 	MemberListByChatRoomID(ctx context.Context, chatRoomID int, memberID int) ([]model.Member, error)
-	ChatRoomListByMemberID(ctx context.Context, memberId int) ([]model.ChatRoom, error)
+	ChatRoomListByMemberID(ctx context.Context, memberID int) ([]model.ChatRoomList, error)
 }
 type SubscriptionResolver interface {
 	UserJoined(ctx context.Context) (<-chan model.User, error)
@@ -168,6 +178,9 @@ type SubscriptionResolver interface {
 	ChatRoomLeave(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error)
 	ChatRoomDetailUpdate(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error)
 	ChatRoomDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error)
+	ChatDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error)
+	AddNewMemberInChatRoom(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error)
+	ChatRoomListByMember(ctx context.Context, memberID int) (<-chan model.ChatRoom, error)
 }
 
 func field_Mutation_newUser_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
@@ -434,14 +447,14 @@ func field_Query_memberListByChatRoomId_args(rawArgs map[string]interface{}) (ma
 func field_Query_chatRoomListByMemberId_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	args := map[string]interface{}{}
 	var arg0 int
-	if tmp, ok := rawArgs["memberId"]; ok {
+	if tmp, ok := rawArgs["memberID"]; ok {
 		var err error
 		arg0, err = model.UnmarshalID(tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["memberId"] = arg0
+	args["memberID"] = arg0
 	return args, nil
 
 }
@@ -571,6 +584,51 @@ func field_Subscription_chatRoomDelete_args(rawArgs map[string]interface{}) (map
 		}
 	}
 	args["chatRoomID"] = arg0
+	return args, nil
+
+}
+
+func field_Subscription_chatDelete_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["chatRoomID"]; ok {
+		var err error
+		arg0, err = model.UnmarshalID(tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["chatRoomID"] = arg0
+	return args, nil
+
+}
+
+func field_Subscription_addNewMemberInChatRoom_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["chatRoomID"]; ok {
+		var err error
+		arg0, err = model.UnmarshalID(tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["chatRoomID"] = arg0
+	return args, nil
+
+}
+
+func field_Subscription_chatRoomListByMember_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["memberID"]; ok {
+		var err error
+		arg0, err = model.UnmarshalID(tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["memberID"] = arg0
 	return args, nil
 
 }
@@ -764,6 +822,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ChatRoom.DeleteAt(childComplexity), true
+
+	case "ChatRoomList.chatRoomID":
+		if e.complexity.ChatRoomList.ChatRoomId == nil {
+			break
+		}
+
+		return e.complexity.ChatRoomList.ChatRoomId(childComplexity), true
+
+	case "ChatRoomList.memberName":
+		if e.complexity.ChatRoomList.MemberName == nil {
+			break
+		}
+
+		return e.complexity.ChatRoomList.MemberName(childComplexity), true
+
+	case "ChatRoomList.chatRoomName":
+		if e.complexity.ChatRoomList.ChatRoomName == nil {
+			break
+		}
+
+		return e.complexity.ChatRoomList.ChatRoomName(childComplexity), true
+
+	case "ChatRoomList.chatRoomType":
+		if e.complexity.ChatRoomList.ChatRoomType == nil {
+			break
+		}
+
+		return e.complexity.ChatRoomList.ChatRoomType(childComplexity), true
 
 	case "Member.id":
 		if e.complexity.Member.Id == nil {
@@ -985,7 +1071,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.ChatRoomListByMemberId(childComplexity, args["memberId"].(int)), true
+		return e.complexity.Query.ChatRoomListByMemberId(childComplexity, args["memberID"].(int)), true
 
 	case "Subscription.userJoined":
 		if e.complexity.Subscription.UserJoined == nil {
@@ -1077,6 +1163,42 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Subscription.ChatRoomDelete(childComplexity, args["chatRoomID"].(int)), true
+
+	case "Subscription.chatDelete":
+		if e.complexity.Subscription.ChatDelete == nil {
+			break
+		}
+
+		args, err := field_Subscription_chatDelete_args(rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.ChatDelete(childComplexity, args["chatRoomID"].(int)), true
+
+	case "Subscription.addNewMemberInChatRoom":
+		if e.complexity.Subscription.AddNewMemberInChatRoom == nil {
+			break
+		}
+
+		args, err := field_Subscription_addNewMemberInChatRoom_args(rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.AddNewMemberInChatRoom(childComplexity, args["chatRoomID"].(int)), true
+
+	case "Subscription.chatRoomListByMember":
+		if e.complexity.Subscription.ChatRoomListByMember == nil {
+			break
+		}
+
+		args, err := field_Subscription_chatRoomListByMember_args(rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.ChatRoomListByMember(childComplexity, args["memberID"].(int)), true
 
 	case "User.id":
 		if e.complexity.User.Id == nil {
@@ -1899,6 +2021,143 @@ func (ec *executionContext) _ChatRoom_deleteAt(ctx context.Context, field graphq
 		return graphql.Null
 	}
 	return graphql.MarshalTime(*res)
+}
+
+var chatRoomListImplementors = []string{"ChatRoomList"}
+
+// nolint: gocyclo, errcheck, gas, goconst
+func (ec *executionContext) _ChatRoomList(ctx context.Context, sel ast.SelectionSet, obj *model.ChatRoomList) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, chatRoomListImplementors)
+
+	out := graphql.NewOrderedMap(len(fields))
+	invalid := false
+	for i, field := range fields {
+		out.Keys[i] = field.Alias
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ChatRoomList")
+		case "chatRoomID":
+			out.Values[i] = ec._ChatRoomList_chatRoomID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "memberName":
+			out.Values[i] = ec._ChatRoomList_memberName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "chatRoomName":
+			out.Values[i] = ec._ChatRoomList_chatRoomName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "chatRoomType":
+			out.Values[i] = ec._ChatRoomList_chatRoomType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _ChatRoomList_chatRoomID(ctx context.Context, field graphql.CollectedField, obj *model.ChatRoomList) graphql.Marshaler {
+	rctx := &graphql.ResolverContext{
+		Object: "ChatRoomList",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ChatRoomID, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	rctx.Result = res
+	return model.MarshalID(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _ChatRoomList_memberName(ctx context.Context, field graphql.CollectedField, obj *model.ChatRoomList) graphql.Marshaler {
+	rctx := &graphql.ResolverContext{
+		Object: "ChatRoomList",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MemberName, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	return graphql.MarshalString(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _ChatRoomList_chatRoomName(ctx context.Context, field graphql.CollectedField, obj *model.ChatRoomList) graphql.Marshaler {
+	rctx := &graphql.ResolverContext{
+		Object: "ChatRoomList",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ChatRoomName, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	return graphql.MarshalString(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _ChatRoomList_chatRoomType(ctx context.Context, field graphql.CollectedField, obj *model.ChatRoomList) graphql.Marshaler {
+	rctx := &graphql.ResolverContext{
+		Object: "ChatRoomList",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ChatRoomType, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	return graphql.MarshalString(res)
 }
 
 var memberImplementors = []string{"Member"}
@@ -2814,7 +3073,7 @@ func (ec *executionContext) _Query_chatRoomListByMemberId(ctx context.Context, f
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().ChatRoomListByMemberID(rctx, args["memberId"].(int))
+		return ec.resolvers.Query().ChatRoomListByMemberID(rctx, args["memberID"].(int))
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -2822,7 +3081,7 @@ func (ec *executionContext) _Query_chatRoomListByMemberId(ctx context.Context, f
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]model.ChatRoom)
+	res := resTmp.([]model.ChatRoomList)
 	rctx.Result = res
 
 	arr1 := make(graphql.Array, len(res))
@@ -2846,7 +3105,7 @@ func (ec *executionContext) _Query_chatRoomListByMemberId(ctx context.Context, f
 			}
 			arr1[idx1] = func() graphql.Marshaler {
 
-				return ec._ChatRoom(ctx, field.Selections, &res[idx1])
+				return ec._ChatRoomList(ctx, field.Selections, &res[idx1])
 			}()
 		}
 		if isLen1 {
@@ -2946,6 +3205,12 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 		return ec._Subscription_chatRoomDetailUpdate(ctx, fields[0])
 	case "chatRoomDelete":
 		return ec._Subscription_chatRoomDelete(ctx, fields[0])
+	case "chatDelete":
+		return ec._Subscription_chatDelete(ctx, fields[0])
+	case "addNewMemberInChatRoom":
+		return ec._Subscription_addNewMemberInChatRoom(ctx, fields[0])
+	case "chatRoomListByMember":
+		return ec._Subscription_chatRoomListByMember(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -3160,6 +3425,93 @@ func (ec *executionContext) _Subscription_chatRoomDelete(ctx context.Context, fi
 	})
 	rctx := ctx // FIXME: subscriptions are missing request middleware stack https://github.com/99designs/gqlgen/issues/259
 	results, err := ec.resolvers.Subscription().ChatRoomDelete(rctx, args["chatRoomID"].(int))
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-results
+		if !ok {
+			return nil
+		}
+		var out graphql.OrderedMap
+		out.Add(field.Alias, func() graphql.Marshaler {
+			return ec._ChatRoom(ctx, field.Selections, &res)
+		}())
+		return &out
+	}
+}
+
+func (ec *executionContext) _Subscription_chatDelete(ctx context.Context, field graphql.CollectedField) func() graphql.Marshaler {
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := field_Subscription_chatDelete_args(rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
+		Field: field,
+	})
+	rctx := ctx // FIXME: subscriptions are missing request middleware stack https://github.com/99designs/gqlgen/issues/259
+	results, err := ec.resolvers.Subscription().ChatDelete(rctx, args["chatRoomID"].(int))
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-results
+		if !ok {
+			return nil
+		}
+		var out graphql.OrderedMap
+		out.Add(field.Alias, func() graphql.Marshaler {
+			return ec._ChatRoom(ctx, field.Selections, &res)
+		}())
+		return &out
+	}
+}
+
+func (ec *executionContext) _Subscription_addNewMemberInChatRoom(ctx context.Context, field graphql.CollectedField) func() graphql.Marshaler {
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := field_Subscription_addNewMemberInChatRoom_args(rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
+		Field: field,
+	})
+	rctx := ctx // FIXME: subscriptions are missing request middleware stack https://github.com/99designs/gqlgen/issues/259
+	results, err := ec.resolvers.Subscription().AddNewMemberInChatRoom(rctx, args["chatRoomID"].(int))
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-results
+		if !ok {
+			return nil
+		}
+		var out graphql.OrderedMap
+		out.Add(field.Alias, func() graphql.Marshaler {
+			return ec._ChatRoom(ctx, field.Selections, &res)
+		}())
+		return &out
+	}
+}
+
+func (ec *executionContext) _Subscription_chatRoomListByMember(ctx context.Context, field graphql.CollectedField) func() graphql.Marshaler {
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := field_Subscription_chatRoomListByMember_args(rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
+		Field: field,
+	})
+	rctx := ctx // FIXME: subscriptions are missing request middleware stack https://github.com/99designs/gqlgen/issues/259
+	results, err := ec.resolvers.Subscription().ChatRoomListByMember(rctx, args["memberID"].(int))
 	if err != nil {
 		ec.Error(ctx, err)
 		return nil
@@ -5285,6 +5637,12 @@ type ChatConversation{
     createdAt: Time!
     updatedAt: Time
 }
+type ChatRoomList{
+    chatRoomID: ID!
+    memberName: String!
+    chatRoomName: String!
+    chatRoomType: String!
+}
 enum ChatRoomType{
     PRIVATE
     GROUP
@@ -5373,6 +5731,9 @@ type Subscription{
     chatRoomLeave(chatRoomID: ID!): ChatRoom!
     chatRoomDetailUpdate(chatRoomID: ID!): ChatRoom!
     chatRoomDelete(chatRoomID: ID!): ChatRoom!
+    chatDelete(chatRoomID: ID!): ChatRoom!
+    addNewMemberInChatRoom(chatRoomID: ID!): ChatRoom!
+    chatRoomListByMember(memberID: ID!): ChatRoom!
 }
 type Mutation{
     newUser(input: NewUser!): User!
@@ -5392,7 +5753,7 @@ type Query{
     chatRooms: [ChatRoom!]
     chatconversationByChatRoomId(chatRoomID: ID!, memberID: ID!): [ChatConversation!]!
     memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): [Member!]!
-    chatRoomListByMemberId(memberId: ID!): [ChatRoom!]!
+    chatRoomListByMemberId(memberID: ID!): [ChatRoomList!]!
 }
 scalar Time`},
 )

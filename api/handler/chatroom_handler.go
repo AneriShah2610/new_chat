@@ -94,7 +94,9 @@ func (r *mutationResolver) DeleteChat(ctx context.Context, input model.DeleteCha
 	}
 	return model.Member{}, nil
 }
-
+func (r *subscriptionResolver) ChatDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error){
+	panic("not implemented")
+}
 // Update chatroom detail
 func (r *mutationResolver) UpdateChatRoomDetail(ctx context.Context, input model.UpdateChatRoomDetail) (model.ChatRoom, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)

@@ -43,6 +43,12 @@ type ChatConversation{
     createdAt: Time!
     updatedAt: Time
 }
+type ChatRoomList{
+    chatRoomID: ID!
+    memberName: String!
+    chatRoomName: String!
+    chatRoomType: String!
+}
 enum ChatRoomType{
     PRIVATE
     GROUP
@@ -131,6 +137,9 @@ type Subscription{
     chatRoomLeave(chatRoomID: ID!): ChatRoom!
     chatRoomDetailUpdate(chatRoomID: ID!): ChatRoom!
     chatRoomDelete(chatRoomID: ID!): ChatRoom!
+    chatDelete(chatRoomID: ID!): ChatRoom!
+    addNewMemberInChatRoom(chatRoomID: ID!): ChatRoom!
+    chatRoomListByMember(memberID: ID!): ChatRoom!
 }
 type Mutation{
     newUser(input: NewUser!): User!
@@ -150,6 +159,6 @@ type Query{
     chatRooms: [ChatRoom!]
     chatconversationByChatRoomId(chatRoomID: ID!, memberID: ID!): [ChatConversation!]!
     memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): [Member!]!
-    chatRoomListByMemberId(memberId: ID!): [ChatRoom!]!
+    chatRoomListByMemberId(memberID: ID!): [ChatRoomList!]!
 }
 scalar Time

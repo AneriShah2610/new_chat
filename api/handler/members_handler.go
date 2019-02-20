@@ -15,7 +15,7 @@ func (r *mutationResolver) NewChatRoomMember(ctx context.Context, input model.Ne
 	var member model.Member
 	member = model.Member{
 		ChatRoomID: input.ChatRoomID,
-		MemberID: input.MemberID,
+		MemberID:   input.MemberID,
 	}
 	// Fetch chatRoomType
 	chatRoomType, err := CheckChatRoomTypeByChatID(ctx, input.ChatRoomID)
@@ -33,13 +33,16 @@ func (r *mutationResolver) NewChatRoomMember(ctx context.Context, input model.Ne
 		if !isMemberExist {
 			row := crConn.Db.QueryRow("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3) RETURNING id, joined_at", input.ChatRoomID, input.MemberID, time.Now())
 			err := row.Scan(&member.ID, &member.JoinAt)
-			if err != nil  {
+			if err != nil {
 				er.DebugPrintf(err)
 				return model.Member{}, er.InternalServerError
 			}
 		}
 	}
 	return member, nil
+}
+func (r *subscriptionResolver) AddNewMemberInChatRoom(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
+	panic("Not implemented")
 }
 
 // Leave chatroom only for group chat
@@ -79,7 +82,7 @@ func (r *memberResolver) Member(ctx context.Context, obj *model.Member) (model.U
 	defer row.Close()
 	for row.Next() {
 		err := row.Scan(&memberInfo.ID, &memberInfo.Username, &memberInfo.FirstName, &memberInfo.LastName, &memberInfo.Email, &memberInfo.Contact, &memberInfo.Bio, &memberInfo.ProfilePicture, &memberInfo.CreatedAt, &memberInfo.UpdatedAt)
-		if err != nil{
+		if err != nil {
 			er.DebugPrintf(err)
 			return model.User{}, er.InternalServerError
 		}

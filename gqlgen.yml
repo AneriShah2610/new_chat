@@ -50,3 +50,5 @@ models:
     model: github.com/aneri/new_chat/model.UpdateUser
   DeleteMessage:
     model: github.com/aneri/new_chat/model.DeleteMessage
+  ChatRoomList:
+    model: github.com/aneri/new_chat/model.ChatRoomList
