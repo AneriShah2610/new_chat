@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	er "github.com/aneri/new_chat/error"
 	"math/rand"
 	"time"
@@ -25,19 +24,26 @@ func (r *queryResolver) Users(ctx context.Context, name string) ([]model.User, e
 	var users []model.User
 	var user model.User
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	rows, err := crConn.Db.Query("SELECT id, username, first_name, last_name, email, contact, bio, profile_picture, created_at, updated_at FROM users WHERE username != $1 ORDER BY username ASC", name)
+	isUserExist, err := CheckUserExistence(ctx, name)
 	if err != nil {
 		er.DebugPrintf(err)
 		return []model.User{}, er.InternalServerError
 	}
-	defer rows.Close()
-	for rows.Next() {
-		err := rows.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Email, &user.Contact, &user.Bio, &user.ProfilePicture, &user.CreatedAt, &user.UpdatedAt)
+	if isUserExist{
+		rows, err := crConn.Db.Query("SELECT id, username, first_name, last_name, email, contact, bio, profile_picture, created_at, updated_at FROM users WHERE username != $1 ORDER BY username ASC", name)
 		if err != nil {
 			er.DebugPrintf(err)
 			return []model.User{}, er.InternalServerError
 		}
-		users = append(users, user)
+		defer rows.Close()
+		for rows.Next() {
+			err := rows.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Email, &user.Contact, &user.Bio, &user.ProfilePicture, &user.CreatedAt, &user.UpdatedAt)
+			if err != nil {
+				er.DebugPrintf(err)
+				return []model.User{}, er.InternalServerError
+			}
+			users = append(users, user)
+		}
 	}
 	return users, nil
 }
@@ -64,7 +70,6 @@ func (r *mutationResolver) NewUser(ctx context.Context, input model.NewUser) (mo
 	if !isUserExist {
 		row := crConn.Db.QueryRow("INSERT INTO users (username, first_name, last_name, email, contact, bio, profile_picture, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id", input.UserName, input.FirstName, input.LastName, input.Email, input.Contact, input.Bio, input.ProfilePicture, time.Now())
 		err = row.Scan(&user.ID)
-		fmt.Println(user.ID)
 		if err != nil {
 			er.DebugPrintf(err)
 			return model.User{}, er.InternalServerError
@@ -76,7 +81,24 @@ func (r *mutationResolver) NewUser(ctx context.Context, input model.NewUser) (mo
 	}
 	return user, nil
 }
-
+func (r *queryResolver) MemberLogIn(ctx context.Context, name string) (model.User, error){
+	crConn := ctx.Value("crConn").(*dal.DbConnection)
+	var user model.User
+	isUserExist, err := CheckUserExistence(ctx, name)
+	if err != nil {
+		er.DebugPrintf(err)
+		return model.User{}, er.InternalServerError
+	}
+	if isUserExist{
+		row := crConn.Db.QueryRow("SELECT id, username, first_name, last_name, email, contact, bio, profile_picture, created_at, updated_at FROM users WHERE username = $1", name)
+		err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Email, &user.Contact, &user.Bio, &user.ProfilePicture, &user.CreatedAt, &user.UpdatedAt)
+		if err != nil{
+			er.DebugPrintf(err)
+			return model.User{}, er.InternalServerError
+		}
+	}
+	return  user, nil
+}
 // Listen New User Request & shown to live
 func (r *subscriptionResolver) UserJoined(ctx context.Context) (<-chan model.User, error) {
 	rand.Seed(time.Now().UnixNano())

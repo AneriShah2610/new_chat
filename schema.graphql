@@ -160,5 +160,6 @@ type Query{
     chatconversationByChatRoomId(chatRoomID: ID!, memberID: ID!): [ChatConversation!]!
     memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): [Member!]!
     chatRoomListByMemberId(memberID: ID!): [ChatRoomList!]!
+    MemberLogIn(name: String!): User!
 }
 scalar Time

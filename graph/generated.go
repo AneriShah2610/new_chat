@@ -106,6 +106,7 @@ type ComplexityRoot struct {
 		ChatconversationByChatRoomId func(childComplexity int, chatRoomID int, memberID int) int
 		MemberListByChatRoomId       func(childComplexity int, chatRoomID int, memberID int) int
 		ChatRoomListByMemberId       func(childComplexity int, memberID int) int
+		MemberLogIn                  func(childComplexity int, name string) int
 	}
 
 	Subscription struct {
@@ -168,6 +169,7 @@ type QueryResolver interface {
 	ChatconversationByChatRoomID(ctx context.Context, chatRoomID int, memberID int) ([]model.ChatConversation, error)
 	MemberListByChatRoomID(ctx context.Context, chatRoomID int, memberID int) ([]model.Member, error)
 	ChatRoomListByMemberID(ctx context.Context, memberID int) ([]model.ChatRoomList, error)
+	MemberLogIn(ctx context.Context, name string) (model.User, error)
 }
 type SubscriptionResolver interface {
 	UserJoined(ctx context.Context) (<-chan model.User, error)
@@ -455,6 +457,21 @@ func field_Query_chatRoomListByMemberId_args(rawArgs map[string]interface{}) (ma
 		}
 	}
 	args["memberID"] = arg0
+	return args, nil
+
+}
+
+func field_Query_MemberLogIn_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["name"]; ok {
+		var err error
+		arg0, err = graphql.UnmarshalString(tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["name"] = arg0
 	return args, nil
 
 }
@@ -1072,6 +1089,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.ChatRoomListByMemberId(childComplexity, args["memberID"].(int)), true
+
+	case "Query.MemberLogIn":
+		if e.complexity.Query.MemberLogIn == nil {
+			break
+		}
+
+		args, err := field_Query_MemberLogIn_args(rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MemberLogIn(childComplexity, args["name"].(string)), true
 
 	case "Subscription.userJoined":
 		if e.complexity.Subscription.UserJoined == nil {
@@ -2803,6 +2832,15 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				wg.Done()
 			}(i, field)
+		case "MemberLogIn":
+			wg.Add(1)
+			go func(i int, field graphql.CollectedField) {
+				out.Values[i] = ec._Query_MemberLogIn(ctx, field)
+				if out.Values[i] == graphql.Null {
+					invalid = true
+				}
+				wg.Done()
+			}(i, field)
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -3117,6 +3155,36 @@ func (ec *executionContext) _Query_chatRoomListByMemberId(ctx context.Context, f
 	}
 	wg.Wait()
 	return arr1
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Query_MemberLogIn(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := field_Query_MemberLogIn_args(rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx := &graphql.ResolverContext{
+		Object: "Query",
+		Args:   args,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().MemberLogIn(rctx, args["name"].(string))
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.User)
+	rctx.Result = res
+
+	return ec._User(ctx, field.Selections, &res)
 }
 
 // nolint: vetshadow
@@ -5754,6 +5822,7 @@ type Query{
     chatconversationByChatRoomId(chatRoomID: ID!, memberID: ID!): [ChatConversation!]!
     memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): [Member!]!
     chatRoomListByMemberId(memberID: ID!): [ChatRoomList!]!
+    MemberLogIn(name: String!): User!
 }
 scalar Time`},
 )
