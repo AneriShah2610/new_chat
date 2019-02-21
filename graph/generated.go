@@ -73,9 +73,9 @@ type ComplexityRoot struct {
 
 	ChatRoomList struct {
 		ChatRoomId   func(childComplexity int) int
-		MemberName   func(childComplexity int) int
-		ChatRoomName func(childComplexity int) int
+		Name         func(childComplexity int) int
 		ChatRoomType func(childComplexity int) int
+		CreatedAt    func(childComplexity int) int
 	}
 
 	Member struct {
@@ -830,19 +830,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ChatRoomList.ChatRoomId(childComplexity), true
 
-	case "ChatRoomList.memberName":
-		if e.complexity.ChatRoomList.MemberName == nil {
+	case "ChatRoomList.name":
+		if e.complexity.ChatRoomList.Name == nil {
 			break
 		}
 
-		return e.complexity.ChatRoomList.MemberName(childComplexity), true
-
-	case "ChatRoomList.chatRoomName":
-		if e.complexity.ChatRoomList.ChatRoomName == nil {
-			break
-		}
-
-		return e.complexity.ChatRoomList.ChatRoomName(childComplexity), true
+		return e.complexity.ChatRoomList.Name(childComplexity), true
 
 	case "ChatRoomList.chatRoomType":
 		if e.complexity.ChatRoomList.ChatRoomType == nil {
@@ -850,6 +843,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ChatRoomList.ChatRoomType(childComplexity), true
+
+	case "ChatRoomList.createdAt":
+		if e.complexity.ChatRoomList.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.ChatRoomList.CreatedAt(childComplexity), true
 
 	case "Member.id":
 		if e.complexity.Member.Id == nil {
@@ -2042,18 +2042,18 @@ func (ec *executionContext) _ChatRoomList(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
-		case "memberName":
-			out.Values[i] = ec._ChatRoomList_memberName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalid = true
-			}
-		case "chatRoomName":
-			out.Values[i] = ec._ChatRoomList_chatRoomName(ctx, field, obj)
+		case "name":
+			out.Values[i] = ec._ChatRoomList_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
 		case "chatRoomType":
 			out.Values[i] = ec._ChatRoomList_chatRoomType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "createdAt":
+			out.Values[i] = ec._ChatRoomList_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
@@ -2092,7 +2092,7 @@ func (ec *executionContext) _ChatRoomList_chatRoomID(ctx context.Context, field 
 }
 
 // nolint: vetshadow
-func (ec *executionContext) _ChatRoomList_memberName(ctx context.Context, field graphql.CollectedField, obj *model.ChatRoomList) graphql.Marshaler {
+func (ec *executionContext) _ChatRoomList_name(ctx context.Context, field graphql.CollectedField, obj *model.ChatRoomList) graphql.Marshaler {
 	rctx := &graphql.ResolverContext{
 		Object: "ChatRoomList",
 		Args:   nil,
@@ -2101,30 +2101,7 @@ func (ec *executionContext) _ChatRoomList_memberName(ctx context.Context, field 
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.MemberName, nil
-	})
-	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	rctx.Result = res
-	return graphql.MarshalString(res)
-}
-
-// nolint: vetshadow
-func (ec *executionContext) _ChatRoomList_chatRoomName(ctx context.Context, field graphql.CollectedField, obj *model.ChatRoomList) graphql.Marshaler {
-	rctx := &graphql.ResolverContext{
-		Object: "ChatRoomList",
-		Args:   nil,
-		Field:  field,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ChatRoomName, nil
+		return obj.Name, nil
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -2158,6 +2135,29 @@ func (ec *executionContext) _ChatRoomList_chatRoomType(ctx context.Context, fiel
 	res := resTmp.(string)
 	rctx.Result = res
 	return graphql.MarshalString(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _ChatRoomList_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.ChatRoomList) graphql.Marshaler {
+	rctx := &graphql.ResolverContext{
+		Object: "ChatRoomList",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	rctx.Result = res
+	return graphql.MarshalTime(res)
 }
 
 var memberImplementors = []string{"Member"}
@@ -5639,9 +5639,9 @@ type ChatConversation{
 }
 type ChatRoomList{
     chatRoomID: ID!
-    memberName: String!
-    chatRoomName: String!
+    name: String!
     chatRoomType: String!
+    createdAt: Time!
 }
 enum ChatRoomType{
     PRIVATE

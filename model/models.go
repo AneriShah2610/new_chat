@@ -1,13 +1,12 @@
-
 package model
 
 import (
-	fmt "fmt"
-	io "io"
-	strconv "strconv"
-	time "time"
+	"fmt"
+	"io"
+	"strconv"
+	"time"
 
-	graphql "github.com/99designs/gqlgen/graphql"
+	"github.com/99designs/gqlgen/graphql"
 )
 
 type User struct {
@@ -122,10 +121,10 @@ type DeleteMessage struct {
 	DeleteByID int `json:"DeleteByID"`
 }
 type ChatRoomList struct {
-	ChatRoomID   int    `json:"chatRoomID"`
-	MemberName   string `json:"memberName"`
-	ChatRoomName string `json:"chatRoomName"`
-	ChatRoomType string `json:"chatRoomType"`
+	ChatRoomID   int       `json:"chatRoomID"`
+	Name         string    `json:"name"`
+	ChatRoomType string    `json:"chatRoomType"`
+	CreatedAt    time.Time `json:"createdAt"`
 }
 
 type UpdateMessageStatus struct {

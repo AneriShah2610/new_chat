@@ -12,6 +12,12 @@ import (
 	"time"
 )
 
+var updateChatRoomDetails map[int]chan model.ChatRoom
+
+func init() {
+	updateChatRoomDetails = map[int]chan model.ChatRoom{}
+}
+
 // Retrieve all Chatrooms either it is private chat or group chat
 func (r *queryResolver) ChatRooms(ctx context.Context) ([]model.ChatRoom, error) {
 	chatRoomData, err := ChatRoomData(ctx)
@@ -48,7 +54,7 @@ func (r *mutationResolver) NewChatRoom(ctx context.Context, input model.NewChatR
 			er.DebugPrintf(err)
 			return model.ChatRoom{}, er.InternalServerError
 		}
-		if isChatRoomExist.ChatRoomID == 0{
+		if isChatRoomExist.ChatRoomID == 0 {
 			row := tx.QueryRow("INSERT INTO chatrooms (creator_id, chatroom_name, chatroom_type, created_at, hashkey) VALUES ($1, $2, $3, $4, $5) RETURNING id", input.CreatorID, input.ChatRoomName, input.ChatRoomType, time.Now(), hashKey)
 			err := row.Scan(&chatroom.ChatRoomID)
 			if err != nil && err == sql.ErrNoRows {
@@ -64,12 +70,12 @@ func (r *mutationResolver) NewChatRoom(ctx context.Context, input model.NewChatR
 				return model.ChatRoom{}, er.InternalServerError
 			}
 			tx.Commit()
-		}else {
+		} else {
 			chatroom = model.ChatRoom{
-				ChatRoomID: isChatRoomExist.ChatRoomID,
+				ChatRoomID:   isChatRoomExist.ChatRoomID,
 				ChatRoomName: input.ChatRoomName,
 				ChatRoomType: input.ChatRoomType,
-				CreatorID: input.CreatorID,
+				CreatorID:    input.CreatorID,
 			}
 			return chatroom, nil
 		}
@@ -94,9 +100,10 @@ func (r *mutationResolver) DeleteChat(ctx context.Context, input model.DeleteCha
 	}
 	return model.Member{}, nil
 }
-func (r *subscriptionResolver) ChatDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error){
+func (r *subscriptionResolver) ChatDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
 	panic("not implemented")
 }
+
 // Update chatroom detail
 func (r *mutationResolver) UpdateChatRoomDetail(ctx context.Context, input model.UpdateChatRoomDetail) (model.ChatRoom, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
@@ -124,11 +131,23 @@ func (r *mutationResolver) UpdateChatRoomDetail(ctx context.Context, input model
 			UpdateByID:   input.UpdateByID,
 		}
 	}
+	channelMsg := updateChatRoomDetails[input.ChatRoomID]
+	if channelMsg != nil {
+		channelMsg <- chatroom
+	}
 	return chatroom, nil
 }
 
 func (r *subscriptionResolver) ChatRoomDetailUpdate(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
-	panic("not implemented")
+	chatevent := make(chan model.ChatRoom, 1)
+	updateChatRoomDetails[chatRoomID] = chatevent
+	go func() {
+		<-ctx.Done()
+		r.mu.Lock()
+		delete(updateChatRoomDetails, chatRoomID)
+		r.mu.Unlock()
+	}()
+	return chatevent, nil
 }
 
 // Delete group chatroom only by creator i.e. admin
@@ -184,7 +203,7 @@ func (r *chatRoomResolver) Creator(ctx context.Context, obj *model.ChatRoom) (mo
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	row := crConn.Db.QueryRow("SELECT users.id, username, first_name, last_name, email, contact, bio, profile_picture, users.created_at, users.updated_at FROM users, chatrooms WHERE chatrooms.id = $1 AND chatrooms.creator_id = users.id", obj.ChatRoomID)
 	err := row.Scan(&creator.ID, &creator.Username, &creator.FirstName, &creator.LastName, &creator.Email, &creator.Contact, &creator.Bio, &creator.ProfilePicture, &creator.CreatedAt, &creator.UpdatedAt)
-	if err != nil && err != sql.ErrNoRows{
+	if err != nil && err != sql.ErrNoRows {
 		er.DebugPrintf(err)
 		return model.User{}, er.InternalServerError
 	}
@@ -198,7 +217,7 @@ func (r *chatRoomResolver) UpdateBy(ctx context.Context, obj *model.ChatRoom) (*
 	rows := crConn.Db.QueryRow("SELECT id, username, first_name, last_name, email, contact, bio, profile_picture, users.created_at FROM users WHERE id = $1", updateById)
 
 	err := rows.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Email, &user.Contact, &user.Bio, &user.ProfilePicture, &user.CreatedAt)
-	if err != nil && err != sql.ErrNoRows{
+	if err != nil && err != sql.ErrNoRows {
 		er.DebugPrintf(err)
 		return nil, er.InternalServerError
 	}

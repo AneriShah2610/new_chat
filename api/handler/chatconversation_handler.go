@@ -3,12 +3,9 @@ package handler
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"github.com/aneri/new_chat/api/dal"
 	er "github.com/aneri/new_chat/error"
 	"github.com/aneri/new_chat/model"
-	"github.com/jmoiron/sqlx"
-	"log"
 	"time"
 )
 
@@ -40,7 +37,7 @@ func (r *queryResolver) ChatconversationByChatRoomID(ctx context.Context, chatRo
 		}
 
 		if isDeleteFlagUpdate != nil {
-			rows, err := crConn.Db.Query("SELECT chatconversation.id, chatconversation.chatroom_id, sender_id, message, message_type, message_status, message_parent_id, created_at, updatedat FROM chatconversation LEFT JOIN members ON members.deleted_at <= chatconversation.created_at WHERE chatconversation.chatroom_id = $1 AND chatconversation.chatroom_id = members.chatroom_id GROUP BY chatconversation.chatroom_id,sender_id, message,message_type, message_parent_id, message_status, created_at, updatedat, chatconversation.id ORDER BY chatconversation.id ASC", chatRoomID)
+			rows, err := crConn.Db.Query("SELECT chatconversation.id, chatconversation.chatroom_id, sender_id, message, message_type, message_status, message_parent_id, created_at, updatedat FROM chatconversation LEFT JOIN members ON members.deleted_at <= chatconversation.created_at WHERE chatconversation.chatroom_id = $1 AND chatconversation.chatroom_id = members.chatroom_id GROUP BY chatconversation.chatroom_id,sender_id, message,message_type, message_parent_id, message_status, created_at, updatedat, chatconversation.id ORDER BY chatconversation.id DESC", chatRoomID)
 			if err != nil {
 				er.DebugPrintf(err)
 				return []model.ChatConversation{}, er.InternalServerError
@@ -55,7 +52,7 @@ func (r *queryResolver) ChatconversationByChatRoomID(ctx context.Context, chatRo
 				chattconversationarr = append(chattconversationarr, chatconversation)
 			}
 		} else {
-			rows, err := crConn.Db.Query("SELECT chatconversation.id, chatconversation.chatroom_id, sender_id, message, message_type, message_status, message_parent_id, created_at, updatedat FROM chatconversation LEFT JOIN members ON members.joined_at <= chatconversation.created_at WHERE chatconversation.chatroom_id = $1 AND chatconversation.chatroom_id = members.chatroom_id GROUP BY chatconversation.chatroom_id,sender_id, message,message_type, message_parent_id, message_status, created_at, updatedat, chatconversation.id ORDER BY chatconversation.id ASC", chatRoomID)
+			rows, err := crConn.Db.Query("SELECT chatconversation.id, chatconversation.chatroom_id, sender_id, message, message_type, message_status, message_parent_id, created_at, updatedat FROM chatconversation LEFT JOIN members ON members.joined_at <= chatconversation.created_at WHERE chatconversation.chatroom_id = $1 AND chatconversation.chatroom_id = members.chatroom_id GROUP BY chatconversation.chatroom_id,sender_id, message,message_type, message_parent_id, message_status, created_at, updatedat, chatconversation.id ORDER BY chatconversation.id DESC", chatRoomID)
 			if err != nil {
 				er.DebugPrintf(err)
 				return []model.ChatConversation{}, er.InternalServerError
@@ -106,9 +103,9 @@ func (r *queryResolver) ChatRoomListByMemberID(ctx context.Context, memberID int
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatroom model.ChatRoom
 	var chatroomarr []model.ChatRoom
-	var userarr []model.User
-	var user model.User
-	var chatRoomIds []int
+	var chatroomLists []model.ChatRoomList
+	var chatroomList model.ChatRoomList
+
 	rows, err := crConn.Db.Query("SELECT DISTINCT(chatrooms.id),chatrooms.chatroom_type,chatroom_name FROM members JOIN chatrooms ON members.chatroom_id = chatrooms.id JOIN chatconversation ON chatconversation.chatroom_id = members.chatroom_id WHERE members.member_id = $1 ORDER BY chatconversation.created_at DESC", memberID)
 	if err != nil {
 		er.DebugPrintf(err)
@@ -123,36 +120,33 @@ func (r *queryResolver) ChatRoomListByMemberID(ctx context.Context, memberID int
 		}
 		chatroomarr = append(chatroomarr, chatroom)
 	}
-	// Risky Code
-	for _, i := range chatroomarr {
-		if i.ChatRoomType == "PRIVATE" {
-			chatRoomIds = append(chatRoomIds, i.ChatRoomID)
+	for _, chatRoom := range chatroomarr{
+		if chatRoom.ChatRoomType == "PRIVATE"{
+			row, _ := crConn.Db.Query("select chatrooms.id,chatrooms.chatroom_type,username as name, chatrooms.created_at from users join members on members.member_id = users.id join chatrooms on chatrooms.id = members.chatroom_id where chatrooms.id = $1 and members.member_id != $2", chatRoom.ChatRoomID, memberID)
+			for row.Next(){
+				err := row.Scan(&chatroomList.ChatRoomID, &chatroomList.ChatRoomType, &chatroomList.Name, &chatroomList.CreatedAt)
+				if err != nil {
+					er.DebugPrintf(err)
+					return []model.ChatRoomList{}, er.InternalServerError
+				}
+				chatroomLists = append(chatroomLists, chatroomList)
+			}
+		}else {
+			row, _ := crConn.Db.Query("select chatrooms.id,chatrooms.chatroom_type,chatroom_name as name, chatrooms.created_at from members join chatrooms on members.chatroom_id = chatrooms.id join chatconversation on chatconversation.chatroom_id = members.chatroom_id where members.member_id = $2 and chatrooms.id = $1", chatRoom.ChatRoomID, memberID)
+			for row.Next() {
+				err := row.Scan(&chatroomList.ChatRoomID, &chatroomList.ChatRoomType, &chatroomList.Name, &chatroomList.CreatedAt)
+				if err != nil {
+					er.DebugPrintf(err)
+					return []model.ChatRoomList{}, er.InternalServerError
+				}
+			}
+			chatroomLists = append(chatroomLists, chatroomList)
 		}
+		//rows, _ := crConn.Db.Query("SELECT IF(select chatrooms.chatroom_type = 'PRIVATE' from chatrooms,(select chatrooms.id,chatrooms.chatroom_type,username as name, chatrooms.created_at from users join members on members.member_id = users.id join chatrooms on chatrooms.id = members.chatroom_id where chatrooms.id = $1 and members.member_id != $2),(select chatrooms.id,chatrooms.chatroom_type,chatroom_name as name,chatrooms.created_at from members join chatrooms on members.chatroom_id = chatrooms.id join chatconversation on chatconversation.chatroom_id = members.chatroom_id where members.member_id = $2 and chatrooms.id = $1))",chatRoom.ChatRoomID, memberID)
+		//defer rows.Close()
+		//log.Println(chatroomid, name, chatroom_type, createtime)
 	}
-	chatroomDetails := fmt.Sprintf("SELECT users.id, username FROM users JOIN members ON members.member_id = users.id where members.chatroom_id IN (?) and members.member_id != ?")
-	sqlQuery, arguments, err := sqlx.In(chatroomDetails, chatRoomIds, memberID)
-	if err != nil {
-		er.DebugPrintf(err)
-		return []model.ChatRoomList{}, er.InternalServerError
-	}
-	sqlQuery = sqlx.Rebind(sqlx.DOLLAR, sqlQuery)
-	rows, err = crConn.Db.Query(sqlQuery, arguments...)
-	if err != nil {
-		er.DebugPrintf(err)
-		return []model.ChatRoomList{}, er.InternalServerError
-	}
-	//defer rows.Close()
-	for rows.Next() {
-		err := rows.Scan(&user.ID, &user.Username)
-		if err != nil {
-			er.DebugPrintf(err)
-			return []model.ChatRoomList{}, er.InternalServerError
-		}
-		userarr = append(userarr, user)
-	}
-	log.Println(userarr)
-	// Risky Code End
-	return chatroomarr, nil
+	return chatroomLists, nil
 }
 func (r *subscriptionResolver) ChatRoomListByMember(ctx context.Context, memberID int) (<-chan model.ChatRoom, error) {
 	panic("not implemented")
