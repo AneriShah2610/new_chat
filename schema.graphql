@@ -45,9 +45,9 @@ type ChatConversation{
 }
 type ChatRoomList{
     chatRoomID: ID!
-    memberName: String!
-    chatRoomName: String!
+    name: String!
     chatRoomType: String!
+    createdAt: Time!
 }
 enum ChatRoomType{
     PRIVATE
