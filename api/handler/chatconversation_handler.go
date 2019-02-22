@@ -267,7 +267,8 @@ func (r *mutationResolver) DeleteMessage(ctx context.Context, input *model.Delet
 			return model.ChatConversation{}, er.InternalServerError
 		}
 		if isMessageOwner {
-			_, err := crConn.Db.Exec("DELETE FROM chatconversation WHERE id = $1", input.MessageID)
+			row := crConn.Db.QueryRow("DELETE FROM chatconversation WHERE id = $1 RETURNING id, chatroom_id, message", input.MessageID)
+			err := row.Scan(&chatconversation.MessageID, &chatconversation.ChatRoomID, &chatconversation.Message)
 			if err != nil {
 				er.DebugPrintf(err)
 				return model.ChatConversation{}, er.InternalServerError

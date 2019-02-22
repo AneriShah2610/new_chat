@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const defaultPort = "5555"
+const defaultPort = "8585"
 
 func main() {
 	port := os.Getenv("PORT")
