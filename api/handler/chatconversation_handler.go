@@ -103,57 +103,44 @@ func (r *queryResolver) ChatRoomListByMemberID(ctx context.Context, memberID int
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatroomLists []model.ChatRoomList
 	var chatroomList model.ChatRoomList
-
-	rows, err := crConn.Db.Query("select distinct(chatrooms.id), chatrooms.chatroom_name as name, chatrooms.chatroom_type, chatrooms.created_at from chatconversation join members on members.chatroom_id = chatconversation.chatroom_id join chatrooms on chatrooms.id = members.chatroom_id where members.member_id = $1 order by chatconversation.created_at desc", memberID)
+	var row *sql.Row
+	rows, err := crConn.Db.Query("select distinct(chatrooms.id), chatrooms.chatroom_type from chatconversation join members on members.chatroom_id = chatconversation.chatroom_id join chatrooms on chatrooms.id = members.chatroom_id where members.member_id = $1 order by chatconversation.created_at desc", memberID)
 	if err != nil {
 		er.DebugPrintf(err)
 		return []model.ChatRoomList{}, er.InternalServerError
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err := rows.Scan(&chatroomList.ChatRoomID, &chatroomList.Name, &chatroomList.ChatRoomType, &chatroomList.CreatedAt)
+		err := rows.Scan(&chatroomList.ChatRoomID, &chatroomList.ChatRoomType)
 		if err != nil {
 			er.DebugPrintf(err)
 			return []model.ChatRoomList{}, er.InternalServerError
 		}
-		if chatroomList.ChatRoomType == "PRIVATE" {
-			row := crConn.Db.QueryRow("select chatrooms.id,username as name, chatrooms.chatroom_type, chatrooms.created_at from users join members on members.member_id = users.id join chatrooms on chatrooms.id = members.chatroom_id where chatrooms.id = $1 and members.member_id != $2", chatroomList.ChatRoomID, memberID)
-			err := row.Scan(&chatroomList.ChatRoomID, &chatroomList.Name, &chatroomList.ChatRoomType, &chatroomList.CreatedAt)
-			if err != nil && err != sql.ErrNoRows {
-				er.DebugPrintf(err)
-				return []model.ChatRoomList{}, er.InternalServerError
-			}
-			chatroomLists = append(chatroomLists, chatroomList)
-		} else {
-			chatroomLists = append(chatroomLists, chatroomList)
+		switch chatroomList.ChatRoomType {
+
+			case "PRIVATE":
+				row = crConn.Db.QueryRow("SELECT chatrooms.id,username AS name, chatrooms.chatroom_type, chatrooms.created_at FROM users JOIN members ON members.member_id = users.id JOIN chatrooms ON chatrooms.id = members.chatroom_id WHERE chatrooms.id = $1 AND members.member_id != $2", chatroomList.ChatRoomID, memberID)
+			default:
+				row = crConn.Db.QueryRow("SELECT chatrooms.id, chatrooms.chatroom_name AS name, chatrooms.chatroom_type, chatrooms.created_at FROM chatrooms WHERE  chatrooms.id = $1", chatroomList.ChatRoomID)
 		}
+		err = row.Scan(&chatroomList.ChatRoomID, &chatroomList.Name, &chatroomList.ChatRoomType, &chatroomList.CreatedAt)
+		if err != nil {
+			er.DebugPrintf(err)
+			return []model.ChatRoomList{}, er.InternalServerError
+		}
+		chatroomLists = append(chatroomLists, chatroomList)
+		//if chatroomList.ChatRoomType == "PRIVATE" {
+		//	row := crConn.Db.QueryRow("select chatrooms.id,username as name, chatrooms.chatroom_type, chatrooms.created_at from users join members on members.member_id = users.id join chatrooms on chatrooms.id = members.chatroom_id where chatrooms.id = $1 and members.member_id != $2", chatroomList.ChatRoomID, memberID)
+		//	err := row.Scan(&chatroomList.ChatRoomID, &chatroomList.Name, &chatroomList.ChatRoomType, &chatroomList.CreatedAt)
+		//	if err != nil && err != sql.ErrNoRows {
+		//		er.DebugPrintf(err)
+		//		return []model.ChatRoomList{}, er.InternalServerError
+		//	}
+		//	chatroomLists = append(chatroomLists, chatroomList)
+		//} else {
+		//	chatroomLists = append(chatroomLists, chatroomList)
+		//}
 	}
-	//for _, chatRoom := range chatroomarr{
-	//	if chatRoom.ChatRoomType == "PRIVATE"{
-	//		row, _ := crConn.Db.Query("select chatrooms.id,chatrooms.chatroom_type,username as name, chatrooms.created_at from users join members on members.member_id = users.id join chatrooms on chatrooms.id = members.chatroom_id where chatrooms.id = $1 and members.member_id != $2", chatRoom.ChatRoomID, memberID)
-	//		for row.Next(){
-	//			err := row.Scan(&chatroomList.ChatRoomID, &chatroomList.ChatRoomType, &chatroomList.Name, &chatroomList.CreatedAt)
-	//			if err != nil {
-	//				er.DebugPrintf(err)
-	//				return []model.ChatRoomList{}, er.InternalServerError
-	//			}
-	//			chatroomLists = append(chatroomLists, chatroomList)
-	//		}
-	//	}else {
-	//		row, _ := crConn.Db.Query("select chatrooms.id,chatrooms.chatroom_type,chatroom_name as name, chatrooms.created_at from members join chatrooms on members.chatroom_id = chatrooms.id join chatconversation on chatconversation.chatroom_id = members.chatroom_id where members.member_id = $2 and chatrooms.id = $1", chatRoom.ChatRoomID, memberID)
-	//		for row.Next() {
-	//			err := row.Scan(&chatroomList.ChatRoomID, &chatroomList.ChatRoomType, &chatroomList.Name, &chatroomList.CreatedAt)
-	//			if err != nil {
-	//				er.DebugPrintf(err)
-	//				return []model.ChatRoomList{}, er.InternalServerError
-	//			}
-	//		}
-	//		chatroomLists = append(chatroomLists, chatroomList)
-	//	}
-	//	//rows, _ := crConn.Db.Query("SELECT IF(select chatrooms.chatroom_type = 'PRIVATE' from chatrooms,(select chatrooms.id,chatrooms.chatroom_type,username as name, chatrooms.created_at from users join members on members.member_id = users.id join chatrooms on chatrooms.id = members.chatroom_id where chatrooms.id = $1 and members.member_id != $2),(select chatrooms.id,chatrooms.chatroom_type,chatroom_name as name,chatrooms.created_at from members join chatrooms on members.chatroom_id = chatrooms.id join chatconversation on chatconversation.chatroom_id = members.chatroom_id where members.member_id = $2 and chatrooms.id = $1))",chatRoom.ChatRoomID, memberID)
-	//	//defer rows.Close()
-	//	//log.Println(chatroomid, name, chatroom_type, createtime)
-	//}
 	return chatroomLists, nil
 }
 func (r *subscriptionResolver) ChatRoomListByMember(ctx context.Context, memberID int) (<-chan model.ChatRoom, error) {
