@@ -122,7 +122,7 @@ type DeleteMessage struct {
 }
 type ChatRoomList struct {
 	ChatRoomID   int       `json:"chatRoomID"`
-	Name         string    `json:"name"`
+	Name         *string    `json:"name"`
 	ChatRoomType string    `json:"chatRoomType"`
 	CreatedAt    time.Time `json:"createdAt"`
 }

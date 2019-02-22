@@ -45,7 +45,7 @@ type ChatConversation{
 }
 type ChatRoomList{
     chatRoomID: ID!
-    name: String!
+    name: String
     chatRoomType: String!
     createdAt: Time!
 }
@@ -145,7 +145,7 @@ type Mutation{
     newUser(input: NewUser!): User!
     newChatRoom(input: NewChatRoom!, receiverID: ID): ChatRoom!
     newChatRoomMember(input: NewChatRoomMember!): Member!
-    newMessage(input: NewMessage!, senderID: ID!): ChatConversation!
+    newMessage(input: NewMessage!): ChatConversation!
     updateMessage(input: UpdateMessage): ChatConversation!
     updateMessageStatus(input: UpdateMessageStatus!): ChatConversation!
     deleteMessage(input: DeleteMessage): ChatConversation!
