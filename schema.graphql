@@ -139,7 +139,7 @@ type Subscription{
     chatRoomDelete(chatRoomID: ID!): ChatRoom!
     chatDelete(chatRoomID: ID!): ChatRoom!
     addNewMemberInChatRoom(chatRoomID: ID!): ChatRoom!
-    chatRoomListByMember(memberID: ID!): ChatRoom!
+    chatRoomListByMember(memberID: ID!): [ChatRoomList!]!
 }
 type Mutation{
     newUser(input: NewUser!): User!

@@ -182,7 +182,7 @@ type SubscriptionResolver interface {
 	ChatRoomDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error)
 	ChatDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error)
 	AddNewMemberInChatRoom(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error)
-	ChatRoomListByMember(ctx context.Context, memberID int) (<-chan model.ChatRoom, error)
+	ChatRoomListByMember(ctx context.Context, memberID int) (<-chan []model.ChatRoomList, error)
 }
 
 func field_Mutation_newUser_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
@@ -3580,7 +3580,39 @@ func (ec *executionContext) _Subscription_chatRoomListByMember(ctx context.Conte
 		}
 		var out graphql.OrderedMap
 		out.Add(field.Alias, func() graphql.Marshaler {
-			return ec._ChatRoom(ctx, field.Selections, &res)
+			arr1 := make(graphql.Array, len(res))
+			var wg sync.WaitGroup
+
+			isLen1 := len(res) == 1
+			if !isLen1 {
+				wg.Add(len(res))
+			}
+
+			for idx1 := range res {
+				idx1 := idx1
+				rctx := &graphql.ResolverContext{
+					Index:  &idx1,
+					Result: &res[idx1],
+				}
+				ctx := graphql.WithResolverContext(ctx, rctx)
+				f := func(idx1 int) {
+					if !isLen1 {
+						defer wg.Done()
+					}
+					arr1[idx1] = func() graphql.Marshaler {
+
+						return ec._ChatRoomList(ctx, field.Selections, &res[idx1])
+					}()
+				}
+				if isLen1 {
+					f(idx1)
+				} else {
+					go f(idx1)
+				}
+
+			}
+			wg.Wait()
+			return arr1
 		}())
 		return &out
 	}
@@ -5790,7 +5822,7 @@ type Subscription{
     chatRoomDelete(chatRoomID: ID!): ChatRoom!
     chatDelete(chatRoomID: ID!): ChatRoom!
     addNewMemberInChatRoom(chatRoomID: ID!): ChatRoom!
-    chatRoomListByMember(memberID: ID!): ChatRoom!
+    chatRoomListByMember(memberID: ID!): [ChatRoomList!]!
 }
 type Mutation{
     newUser(input: NewUser!): User!

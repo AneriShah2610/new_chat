@@ -39,14 +39,18 @@ type UpdateUser struct {
 }
 
 type ChatRoom struct {
-	ChatRoomID   int          `json:"chatRoomID"`
-	CreatorID    int          `json:"creatorID"`
-	ChatRoomName *string      `json:"chatRoomName"`
-	ChatRoomType ChatRoomType `json:"chatRoomType"`
-	CreatedAt    time.Time    `json:"createdAt"`
-	UpdateByID   *int         `json:"updateByID"`
-	UpdatedAt    *time.Time   `json:"updatedAt"`
-	DeleteAt     *time.Time   `json:"deleteAt"`
+	ChatRoomID             int                           `json:"chatRoomID"`
+	CreatorID              int                           `json:"creatorID"`
+	ChatRoomName           *string                       `json:"chatRoomName"`
+	ChatRoomType           ChatRoomType                  `json:"chatRoomType"`
+	CreatedAt              time.Time                     `json:"createdAt"`
+	UpdateByID             *int                          `json:"updateByID"`
+	UpdatedAt              *time.Time                    `json:"updatedAt"`
+	DeleteAt               *time.Time                    `json:"deleteAt"`
+	ChatConversations      []ChatConversation            `json:"chatConversation"`
+	AddMessageObservers    map[int]chan ChatConversation `json:"addMessageObserver"`
+	UpdateMessageObservers map[int]chan ChatConversation `json:"updateMessageObserver"`
+	DeleteMessageObservers map[int]chan ChatConversation `json:"deleteMessageObserver"`
 }
 
 type NewChatRoom struct {
@@ -62,11 +66,13 @@ type UpdateChatRoomDetail struct {
 }
 
 type Member struct {
-	ID         int        `json:"id"`
-	ChatRoomID int        `json:"chatRoomID"`
-	MemberID   int        `json:"memberID"`
-	JoinAt     time.Time  `json:"joinAt"`
-	DeleteAt   *time.Time `json:"deleteAt"`
+	ID                    int                        `json:"id"`
+	ChatRoomID            int                        `json:"chatRoomID"`
+	MemberID              int                        `json:"memberID"`
+	JoinAt                time.Time                  `json:"joinAt"`
+	DeleteAt              *time.Time                 `json:"deleteAt"`
+	ChatRoomLists         [][]ChatRoomList            `json:"chatRoomLists"`
+	ChatRoomListObservers map[int]chan []ChatRoomList `json:"chatRoomList"`
 }
 type NewChatRoomMember struct {
 	ChatRoomID int `json:"chatRoomID"`
@@ -122,7 +128,7 @@ type DeleteMessage struct {
 }
 type ChatRoomList struct {
 	ChatRoomID   int       `json:"chatRoomID"`
-	Name         *string    `json:"name"`
+	Name         *string   `json:"name"`
 	ChatRoomType string    `json:"chatRoomType"`
 	CreatedAt    time.Time `json:"createdAt"`
 }

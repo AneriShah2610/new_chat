@@ -3,15 +3,43 @@
 package handler
 
 import (
+	"github.com/aneri/new_chat/model"
 	"sync"
 
-	graph "github.com/aneri/new_chat/graph"
+	"github.com/aneri/new_chat/graph"
 )
 
 type Resolver struct {
-	mu sync.Mutex
+	AddMessages map[int]*model.ChatRoom
+	UpdateMessage map[int]*model.ChatRoom
+	DeleteMessage map[int]*model.ChatRoom
+	ChatRoomList map[int]*model.Member
+	mu    sync.Mutex // nolint: structcheck
 }
 
+func NewResolver() *Resolver{
+	return  &Resolver{
+		AddMessages: make(map[int]*model.ChatRoom),
+		UpdateMessage: make(map[int]*model.ChatRoom),
+		DeleteMessage: make(map[int]*model.ChatRoom),
+		ChatRoomList: make(map[int]*model.Member),
+	}
+}
+var g = NewResolver()
+func init(){
+	g = NewResolver()
+}
+
+func New() graph.Config {
+	return graph.Config{
+		Resolvers: &Resolver{
+			AddMessages: map[int]*model.ChatRoom{},
+			UpdateMessage: map[int]*model.ChatRoom{},
+			DeleteMessage: map[int]*model.ChatRoom{},
+			ChatRoomList: map[int]*model.Member{},
+		},
+	}
+}
 func (r *Resolver) ChatConversation() graph.ChatConversationResolver {
 	return &chatConversationResolver{r}
 }
