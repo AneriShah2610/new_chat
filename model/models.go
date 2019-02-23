@@ -57,6 +57,7 @@ type NewChatRoom struct {
 	CreatorID    int          `json:"creatorID"`
 	ChatRoomName *string      `json:"chatRoomName"`
 	ChatRoomType ChatRoomType `json:"chatRoomType"`
+	ReceiverID   []int        `json:"receiverID"`
 }
 
 type UpdateChatRoomDetail struct {
@@ -66,11 +67,11 @@ type UpdateChatRoomDetail struct {
 }
 
 type Member struct {
-	ID                    int                        `json:"id"`
-	ChatRoomID            int                        `json:"chatRoomID"`
-	MemberID              int                        `json:"memberID"`
-	JoinAt                time.Time                  `json:"joinAt"`
-	DeleteAt              *time.Time                 `json:"deleteAt"`
+	ID                    int                         `json:"id"`
+	ChatRoomID            int                         `json:"chatRoomID"`
+	MemberID              int                         `json:"memberID"`
+	JoinAt                time.Time                   `json:"joinAt"`
+	DeleteAt              *time.Time                  `json:"deleteAt"`
 	ChatRoomLists         [][]ChatRoomList            `json:"chatRoomLists"`
 	ChatRoomListObservers map[int]chan []ChatRoomList `json:"chatRoomList"`
 }

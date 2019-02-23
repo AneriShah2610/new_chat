@@ -29,7 +29,7 @@ func (r *queryResolver) ChatRooms(ctx context.Context) ([]model.ChatRoom, error)
 }
 
 // Create New Chat room
-func (r *mutationResolver) NewChatRoom(ctx context.Context, input model.NewChatRoom, receiverID *int) (model.ChatRoom, error) {
+func (r *mutationResolver) NewChatRoom(ctx context.Context, input model.NewChatRoom) (model.ChatRoom, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatroom model.ChatRoom
 	chatroom = model.ChatRoom{
@@ -40,7 +40,7 @@ func (r *mutationResolver) NewChatRoom(ctx context.Context, input model.NewChatR
 	if input.ChatRoomType.String() == "PRIVATE" {
 		// HashKey Creation for private chatroom -- start
 		var memberIdsArray []int
-		memberIdsArray = append(memberIdsArray, input.CreatorID, *receiverID)
+		memberIdsArray = append(memberIdsArray, input.CreatorID, input.ReceiverID[0])
 		sort.Ints(memberIdsArray)
 		hashKey := helper.HashKeycreation(memberIdsArray)
 		// HashKey Creation for private chatroom -- end
@@ -63,7 +63,7 @@ func (r *mutationResolver) NewChatRoom(ctx context.Context, input model.NewChatR
 				return model.ChatRoom{}, er.InternalServerError
 			}
 			// Insert member in chatroom
-			_, err = tx.Exec("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3), ($1, $4, $3)", chatroom.ChatRoomID, input.CreatorID, time.Now(), receiverID)
+			_, err = tx.Exec("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3), ($1, $4, $3)", chatroom.ChatRoomID, input.CreatorID, time.Now(), input.ReceiverID[0])
 			if err != nil {
 				er.DebugPrintf(err)
 				tx.Rollback()

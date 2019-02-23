@@ -79,6 +79,7 @@ input NewChatRoom{
     creatorID: ID!
     chatRoomName: String
     chatRoomType: ChatRoomType!
+    receiverID: [ID!]!
 }
 input NewChatRoomMember{
     chatRoomID: ID!
@@ -143,7 +144,7 @@ type Subscription{
 }
 type Mutation{
     newUser(input: NewUser!): User!
-    newChatRoom(input: NewChatRoom!, receiverID: ID): ChatRoom!
+    newChatRoom(input: NewChatRoom!): ChatRoom!
     newChatRoomMember(input: NewChatRoomMember!): Member!
     newMessage(input: NewMessage!): ChatConversation!
     updateMessage(input: UpdateMessage): ChatConversation!

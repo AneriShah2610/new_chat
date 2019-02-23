@@ -88,7 +88,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		NewUser              func(childComplexity int, input model.NewUser) int
-		NewChatRoom          func(childComplexity int, input model.NewChatRoom, receiverID *int) int
+		NewChatRoom          func(childComplexity int, input model.NewChatRoom) int
 		NewChatRoomMember    func(childComplexity int, input model.NewChatRoomMember) int
 		NewMessage           func(childComplexity int, input model.NewMessage) int
 		UpdateMessage        func(childComplexity int, input *model.UpdateMessage) int
@@ -152,7 +152,7 @@ type MemberResolver interface {
 }
 type MutationResolver interface {
 	NewUser(ctx context.Context, input model.NewUser) (model.User, error)
-	NewChatRoom(ctx context.Context, input model.NewChatRoom, receiverID *int) (model.ChatRoom, error)
+	NewChatRoom(ctx context.Context, input model.NewChatRoom) (model.ChatRoom, error)
 	NewChatRoomMember(ctx context.Context, input model.NewChatRoomMember) (model.Member, error)
 	NewMessage(ctx context.Context, input model.NewMessage) (model.ChatConversation, error)
 	UpdateMessage(ctx context.Context, input *model.UpdateMessage) (model.ChatConversation, error)
@@ -211,20 +211,6 @@ func field_Mutation_newChatRoom_args(rawArgs map[string]interface{}) (map[string
 		}
 	}
 	args["input"] = arg0
-	var arg1 *int
-	if tmp, ok := rawArgs["receiverID"]; ok {
-		var err error
-		var ptr1 int
-		if tmp != nil {
-			ptr1, err = model.UnmarshalID(tmp)
-			arg1 = &ptr1
-		}
-
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["receiverID"] = arg1
 	return args, nil
 
 }
@@ -916,7 +902,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.NewChatRoom(childComplexity, args["input"].(model.NewChatRoom), args["receiverID"].(*int)), true
+		return e.complexity.Mutation.NewChatRoom(childComplexity, args["input"].(model.NewChatRoom)), true
 
 	case "Mutation.newChatRoomMember":
 		if e.complexity.Mutation.NewChatRoomMember == nil {
@@ -2477,7 +2463,7 @@ func (ec *executionContext) _Mutation_newChatRoom(ctx context.Context, field gra
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().NewChatRoom(rctx, args["input"].(model.NewChatRoom), args["receiverID"].(*int))
+		return ec.resolvers.Mutation().NewChatRoom(rctx, args["input"].(model.NewChatRoom))
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -5351,6 +5337,23 @@ func UnmarshalNewChatRoom(v interface{}) (model.NewChatRoom, error) {
 			if err != nil {
 				return it, err
 			}
+		case "receiverID":
+			var err error
+			var rawIf1 []interface{}
+			if v != nil {
+				if tmp1, ok := v.([]interface{}); ok {
+					rawIf1 = tmp1
+				} else {
+					rawIf1 = []interface{}{v}
+				}
+			}
+			it.ReceiverID = make([]int, len(rawIf1))
+			for idx1 := range rawIf1 {
+				it.ReceiverID[idx1], err = model.UnmarshalID(rawIf1[idx1])
+			}
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -5762,6 +5765,7 @@ input NewChatRoom{
     creatorID: ID!
     chatRoomName: String
     chatRoomType: ChatRoomType!
+    receiverID: [ID!]!
 }
 input NewChatRoomMember{
     chatRoomID: ID!
@@ -5826,7 +5830,7 @@ type Subscription{
 }
 type Mutation{
     newUser(input: NewUser!): User!
-    newChatRoom(input: NewChatRoom!, receiverID: ID): ChatRoom!
+    newChatRoom(input: NewChatRoom!): ChatRoom!
     newChatRoomMember(input: NewChatRoomMember!): Member!
     newMessage(input: NewMessage!): ChatConversation!
     updateMessage(input: UpdateMessage): ChatConversation!
