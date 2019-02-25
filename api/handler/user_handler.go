@@ -81,23 +81,26 @@ func (r *mutationResolver) NewUser(ctx context.Context, input model.NewUser) (mo
 	}
 	return user, nil
 }
-func (r *queryResolver) MemberLogIn(ctx context.Context, name string) (model.User, error){
+func (r *queryResolver) MemberLogIn(ctx context.Context, name string) (*model.User, error){
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var user model.User
 	isUserExist, err := CheckUserExistence(ctx, name)
 	if err != nil {
 		er.DebugPrintf(err)
-		return model.User{}, er.InternalServerError
+		return &model.User{}, er.InternalServerError
 	}
 	if isUserExist{
 		row := crConn.Db.QueryRow("SELECT id, username, first_name, last_name, email, contact, bio, profile_picture, created_at, updated_at FROM users WHERE username = $1", name)
 		err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Email, &user.Contact, &user.Bio, &user.ProfilePicture, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil{
 			er.DebugPrintf(err)
-			return model.User{}, er.InternalServerError
+			return &model.User{}, er.InternalServerError
 		}
+	} else {
+		return nil, er.UserDoesNotExists
 	}
-	return  user, nil
+
+	return &user, nil
 }
 // Listen New User Request & shown to live
 func (r *subscriptionResolver) UserJoined(ctx context.Context) (<-chan model.User, error) {

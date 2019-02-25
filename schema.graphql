@@ -156,7 +156,7 @@ type Mutation{
     updateMessage(input: UpdateMessage): ChatConversation!
     updateMessageStatus(input: UpdateMessageStatus!): ChatConversation!
     deleteMessage(input: DeleteMessage): ChatConversation!
-    deleteChat(input: DeleteChat!): Member!
+    deleteChat(input: DeleteChat!): Boolean!
     leaveChatRoom(input: LeaveChatRoom!): String!
     updateChatRoomDetail(input: UpdateChatRoomDetail!): ChatRoom!
     deleteChatRoom(input: DeleteChatRoom!): ChatRoom!
@@ -167,6 +167,6 @@ type Query{
     chatconversationByChatRoomId(chatRoomID: ID!, memberID: ID!): [ChatConversation!]!
     memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): [Member!]!
     chatRoomListByMemberId(memberID: ID!): [ChatRoomList!]!
-    MemberLogIn(name: String!): User!
+    MemberLogIn(name: String!): User
 }
 scalar Time

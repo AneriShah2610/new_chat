@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"database/sql"
-	"strconv"
 	"time"
 
 	"github.com/aneri/new_chat/api/dal"
@@ -85,48 +84,7 @@ func (r *queryResolver) MemberListByChatRoomID(ctx context.Context, chatRoomID i
 }
 
 func (r *queryResolver) ChatRoomListByMemberID(ctx context.Context, memberID int) ([]model.ChatRoomList, error) {
-	chatroomlist := g.ChatRoomList[memberID]
-	if chatroomlist == nil {
-		chatroomlist = &model.Member{MemberID: memberID, ChatRoomListObservers: map[int]chan []model.ChatRoomList{}}
-		g.ChatRoomList[memberID] = chatroomlist
-	}
-
-	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	var chatroomLists []model.ChatRoomList
-	var chatroomList model.ChatRoomList
-	var row *sql.Row
-	rows, err := crConn.Db.Query("select distinct(chatrooms.id), chatrooms.chatroom_type from chatconversation join members on members.chatroom_id = chatconversation.chatroom_id join chatrooms on chatrooms.id = members.chatroom_id where members.member_id = $1 order by chatconversation.created_at desc", memberID)
-	if err != nil {
-		er.DebugPrintf(err)
-		return []model.ChatRoomList{}, er.InternalServerError
-	}
-	defer rows.Close()
-	for rows.Next() {
-		err := rows.Scan(&chatroomList.ChatRoomID, &chatroomList.ChatRoomType)
-		if err != nil {
-			er.DebugPrintf(err)
-			return []model.ChatRoomList{}, er.InternalServerError
-		}
-
-		switch chatroomList.ChatRoomType {
-
-		case "PRIVATE":
-			row = crConn.Db.QueryRow("SELECT chatrooms.id,username AS name, chatrooms.chatroom_type, chatrooms.created_at FROM users JOIN members ON members.member_id = users.id JOIN chatrooms ON chatrooms.id = members.chatroom_id WHERE chatrooms.id = $1 AND members.member_id != $2", chatroomList.ChatRoomID, memberID)
-		default:
-			row = crConn.Db.QueryRow("SELECT chatrooms.id, chatrooms.chatroom_name AS name, chatrooms.chatroom_type, chatrooms.created_at FROM chatrooms WHERE  chatrooms.id = $1", chatroomList.ChatRoomID)
-		}
-		err = row.Scan(&chatroomList.ChatRoomID, &chatroomList.Name, &chatroomList.ChatRoomType, &chatroomList.CreatedAt)
-		if err != nil {
-			er.DebugPrintf(err)
-			return []model.ChatRoomList{}, er.InternalServerError
-		}
-		chatroomLists = append(chatroomLists, chatroomList)
-	}
-	chatroomlist.ChatRoomLists = append(chatroomlist.ChatRoomLists, chatroomLists)
-	for _, observer := range chatroomlist.ChatRoomListObservers {
-		observer <- chatroomLists
-	}
-	return chatroomLists, nil
+	return chatRoomListByMemberID(ctx, memberID)
 }
 func (r *subscriptionResolver) ChatRoomListByMember(ctx context.Context, memberID int) (<-chan []model.ChatRoomList, error) {
 	chatroomlist := g.ChatRoomList[memberID]
@@ -134,15 +92,15 @@ func (r *subscriptionResolver) ChatRoomListByMember(ctx context.Context, memberI
 		chatroomlist = &model.Member{MemberID: memberID, ChatRoomListObservers: map[int]chan []model.ChatRoomList{}}
 		g.ChatRoomList[memberID] = chatroomlist
 	}
-	id, _ := strconv.Atoi(helper.RandString(20))
+	//id, _ := strconv.Atoi(helper.RandString(20))
 	chatroomListEvenet := make(chan []model.ChatRoomList, 1)
 	go func() {
 		<-ctx.Done()
 		r.mu.Lock()
-		delete(chatroomlist.ChatRoomListObservers, id)
+		delete(chatroomlist.ChatRoomListObservers, memberID)
 		r.mu.Unlock()
 	}()
-	chatroomlist.ChatRoomListObservers[id] = chatroomListEvenet
+	chatroomlist.ChatRoomListObservers[memberID] = chatroomListEvenet
 	return chatroomListEvenet, nil
 }
 
@@ -180,6 +138,7 @@ func (r *mutationResolver) NewMessage(ctx context.Context, input model.NewMessag
 	for _, observer := range addChatConvo.AddMessageObservers {
 		observer <- chatconversation
 	}
+	chatRoomListByMemberID(ctx, input.SenderID)
 	return chatconversation, nil
 }
 
@@ -245,6 +204,7 @@ func (r *mutationResolver) UpdateMessage(ctx context.Context, input *model.Updat
 	for _, observer := range updateChatConvo.UpdateMessageObservers {
 		observer <- chatconversation
 	}
+
 	return chatconversation, nil
 }
 
@@ -377,4 +337,60 @@ func CheckMemberOwner(ctx context.Context, messageID int, senderID int) (bool, e
 		return false, er.InternalServerError
 	}
 	return isMessageOwner, nil
+}
+
+func fetchChatRoomList(ctx context.Context, memberID int) ([]model.ChatRoomList, error) {
+	crConn := ctx.Value("crConn").(*dal.DbConnection)
+	var chatroomLists []model.ChatRoomList
+	var chatroomList model.ChatRoomList
+	var row *sql.Row
+	rows, err := crConn.Db.Query("SELECT DISTINCT(chatrooms.id), chatrooms.chatroom_type FROM chatconversation JOIN members ON members.chatroom_id = chatconversation.chatroom_id JOIN chatrooms ON chatrooms.id = members.chatroom_id WHERE members.member_id = $1 ORDER BY chatconversation.created_at DESC", memberID)
+	if err != nil {
+		//er.DebugPrintf(err)
+		return []model.ChatRoomList{}, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err := rows.Scan(&chatroomList.ChatRoomID, &chatroomList.ChatRoomType)
+		if err != nil {
+			//er.DebugPrintf(err)
+			return []model.ChatRoomList{}, err
+		}
+
+		switch chatroomList.ChatRoomType {
+
+		case "PRIVATE":
+			row = crConn.Db.QueryRow("SELECT chatrooms.id,username AS name, chatrooms.chatroom_type, chatrooms.created_at FROM users JOIN members ON members.member_id = users.id JOIN chatrooms ON chatrooms.id = members.chatroom_id WHERE chatrooms.id = $1 AND members.member_id != $2", chatroomList.ChatRoomID, memberID)
+		default:
+			row = crConn.Db.QueryRow("SELECT chatrooms.id, chatrooms.chatroom_name AS name, chatrooms.chatroom_type, chatrooms.created_at FROM chatrooms WHERE  chatrooms.id = $1", chatroomList.ChatRoomID)
+		}
+		err = row.Scan(&chatroomList.ChatRoomID, &chatroomList.Name, &chatroomList.ChatRoomType, &chatroomList.CreatedAt)
+		if err != nil {
+			//er.DebugPrintf(err)
+			return []model.ChatRoomList{}, err
+		}
+		chatroomLists = append(chatroomLists, chatroomList)
+	}
+	return chatroomLists, nil
+}
+
+func chatRoomListByMemberID(ctx context.Context, memberID int) ([]model.ChatRoomList, error) {
+	var chatroomLists []model.ChatRoomList
+	var err error
+	chatroomlist := g.ChatRoomList[memberID]
+	if chatroomlist == nil {
+		chatroomlist = &model.Member{MemberID: memberID, ChatRoomListObservers: map[int]chan []model.ChatRoomList{}}
+		g.ChatRoomList[memberID] = chatroomlist
+	}
+
+	chatroomLists, err =  fetchChatRoomList(ctx, memberID)
+	if err != nil {
+		er.DebugPrintf(err)
+		return []model.ChatRoomList{}, er.InternalServerError
+	}
+	chatroomlist.ChatRoomLists = append(chatroomlist.ChatRoomLists, chatroomLists)
+	for _, observer := range chatroomlist.ChatRoomListObservers {
+		observer <- chatroomLists
+	}
+	return chatroomLists, nil
 }

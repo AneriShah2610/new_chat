@@ -98,14 +98,15 @@ func (r *mutationResolver) NewGroupchatRoom(ctx context.Context, input model.New
 }
 
 // Delete chat by particular member
-func (r *mutationResolver) DeleteChat(ctx context.Context, input model.DeleteChat) (model.Member, error) {
+func (r *mutationResolver) DeleteChat(ctx context.Context, input model.DeleteChat) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	_, err := crConn.Db.Exec("UPDATE members SET deleted_at = $1 WHERE chatroom_id = $2 AND member_id = $3", time.Now().UTC(), input.ChatRoomID, input.MemberID)
 	if err != nil {
 		er.DebugPrintf(err)
-		return model.Member{}, er.InternalServerError
+		return false, er.InternalServerError
 	}
-	return model.Member{}, nil
+	chatRoomListByMemberID(ctx, input.MemberID)
+	return true, nil
 }
 func (r *subscriptionResolver) ChatDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
 	panic("not implemented")
@@ -285,7 +286,7 @@ func countChatRoomMember(ctx context.Context, chatRoomID int) (int, error) {
 
 func createChatRoom(tx *sql.Tx, creator_id int, chatroom_name *string, chatroom_type model.ChatRoomType, hashkey *string) (int, error) {
 	var chatRoomID int
-	row := tx.QueryRow("INSERT INTO chatrooms (creator_id, chatroom_name, chatroom_type, created_at, hashkey) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (creator_is, chatroom_name) DO NOTHING RETURNING id", creator_id, chatroom_name, chatroom_type, time.Now(), hashkey)
+	row := tx.QueryRow("INSERT INTO chatrooms (creator_id, chatroom_name, chatroom_type, created_at, hashkey) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (creator_id, chatroom_name) DO NOTHING RETURNING id", creator_id, chatroom_name, chatroom_type, time.Now(), hashkey)
 	err := row.Scan(&chatRoomID)
 	if err != nil {
 		tx.Rollback()

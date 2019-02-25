@@ -20,6 +20,7 @@ var (
 	TimeStampError                    = GenerateError("time should be a unix timestamp")
 	InternalServerError               = GenerateError("internal server error")
 	InvalidStructureIDError           = GenerateError("invalid structure id")
+	UserDoesNotExists			  	  = GenerateError("Provided user does not exists, please register first")
 )
 
 func GenerateError(err string) error {
