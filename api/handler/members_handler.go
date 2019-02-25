@@ -10,36 +10,24 @@ import (
 	"time"
 )
 
-func (r *mutationResolver) NewChatRoomMember(ctx context.Context, input model.NewChatRoomMember) (model.Member, error) {
+func (r *mutationResolver) NewChatRoomMembers(ctx context.Context, input model.NewChatRoomMembers) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	var member model.Member
-	member = model.Member{
-		ChatRoomID: input.ChatRoomID,
-		MemberID:   input.MemberID,
-	}
 	// Fetch chatRoomType
-	chatRoomType, err := CheckChatRoomTypeByChatID(ctx, input.ChatRoomID)
+	chatRoomType, err := checkChatRoomTypeByChatID(ctx, input.ChatRoomID)
 	if err != nil && err == sql.ErrNoRows {
 		er.DebugPrintf(err)
-		return model.Member{}, er.InternalServerError
+		return false, er.InternalServerError
 	}
 	if chatRoomType == "GROUP" {
-		// Fetch Member existence in  chatRoom
-		isMemberExist, err := CheckMemberExistence(ctx, input.ChatRoomID, input.MemberID)
-		if err != nil {
-			er.DebugPrintf(err)
-			return model.Member{}, er.InternalServerError
-		}
-		if !isMemberExist {
-			row := crConn.Db.QueryRow("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3) RETURNING id, joined_at", input.ChatRoomID, input.MemberID, time.Now())
-			err := row.Scan(&member.ID, &member.JoinAt)
+		for _, memberID := range input.MemberIDs{
+			_, err := crConn.Db.Exec("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3) ON CONFLICT (chatroom_id, member_id) DO NOTHING RETURNING id, joined_at", input.ChatRoomID, memberID, time.Now().UTC())
 			if err != nil {
 				er.DebugPrintf(err)
-				return model.Member{}, er.InternalServerError
+				return false, er.InternalServerError
 			}
 		}
 	}
-	return member, nil
+	return true, nil
 }
 func (r *subscriptionResolver) AddNewMemberInChatRoom(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
 	panic("Not implemented")
@@ -48,13 +36,13 @@ func (r *subscriptionResolver) AddNewMemberInChatRoom(ctx context.Context, chatR
 // Leave chatroom only for group chat
 func (r *mutationResolver) LeaveChatRoom(ctx context.Context, input model.LeaveChatRoom) (string, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	chatRoomType, err := CheckChatRoomTypeByChatID(ctx, input.ChatRoomID)
+	chatRoomType, err := checkChatRoomTypeByChatID(ctx, input.ChatRoomID)
 	if err != nil && err == sql.ErrNoRows {
 		er.DebugPrintf(err)
 		return " ", er.InternalServerError
 	}
 	if chatRoomType == "GROUP" {
-		isCreator, err := CheckCreator(ctx, input.ChatRoomID, input.MemberID)
+		isCreator, err := checkCreator(ctx, input.ChatRoomID, input.MemberID)
 		if err != nil {
 			er.DebugPrintf(err)
 			return " ", er.InternalServerError
@@ -89,7 +77,7 @@ func (r *memberResolver) Member(ctx context.Context, obj *model.Member) (model.U
 	}
 	return memberInfo, nil
 }
-func CheckChatRoomTypeByChatID(ctx context.Context, chatRoomID int) (string, error) {
+func checkChatRoomTypeByChatID(ctx context.Context, chatRoomID int) (string, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatroom model.ChatRoom
 	row := crConn.Db.QueryRow("SELECT chatroom_type FROM chatrooms WHERE id = $1", chatRoomID)
@@ -100,7 +88,7 @@ func CheckChatRoomTypeByChatID(ctx context.Context, chatRoomID int) (string, err
 	}
 	return chatroom.ChatRoomType.String(), nil
 }
-func CheckMemberExistence(ctx context.Context, chatRoomID int, memberID int) (bool, error) {
+func checkMemberExistence(ctx context.Context, chatRoomID int, memberID int) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var isMemberExist bool
 	row := crConn.Db.QueryRow("SELECT true FROM members WHERE chatroom_id = $1 and member_id = $2", chatRoomID, memberID)

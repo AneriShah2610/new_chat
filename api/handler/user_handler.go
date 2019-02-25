@@ -68,7 +68,7 @@ func (r *mutationResolver) NewUser(ctx context.Context, input model.NewUser) (mo
 		return model.User{}, er.InternalServerError
 	}
 	if !isUserExist {
-		row := crConn.Db.QueryRow("INSERT INTO users (username, first_name, last_name, email, contact, bio, profile_picture, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id", input.UserName, input.FirstName, input.LastName, input.Email, input.Contact, input.Bio, input.ProfilePicture, time.Now())
+		row := crConn.Db.QueryRow("INSERT INTO users (username, first_name, last_name, email, contact, bio, profile_picture, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id", input.UserName, input.FirstName, input.LastName, input.Email, input.Contact, input.Bio, input.ProfilePicture, time.Now().UTC())
 		err = row.Scan(&user.ID)
 		if err != nil {
 			er.DebugPrintf(err)

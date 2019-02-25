@@ -20,7 +20,7 @@ func init() {
 
 // Retrieve all Chatrooms either it is private chat or group chat
 func (r *queryResolver) ChatRooms(ctx context.Context) ([]model.ChatRoom, error) {
-	chatRoomData, err := ChatRoomData(ctx)
+	chatRoomData, err := chatRoomData(ctx)
 	if err != nil {
 		er.DebugPrintf(err)
 		return []model.ChatRoom{}, er.InternalServerError
@@ -29,71 +29,78 @@ func (r *queryResolver) ChatRooms(ctx context.Context) ([]model.ChatRoom, error)
 }
 
 // Create New Chat room
-func (r *mutationResolver) NewChatRoom(ctx context.Context, input model.NewChatRoom) (model.ChatRoom, error) {
+func (r *mutationResolver) NewPrivateChatRoom(ctx context.Context, input model.NewPrivateChatRoom) (model.ChatRoom, error) {
+	crConn := ctx.Value("crConn").(*dal.DbConnection)
+	var err error
+	// HashKey Creation for private chatroom -- start
+	var memberIdsArray []int
+	memberIdsArray = append(memberIdsArray, input.CreatorID, input.ReceiverID)
+	sort.Ints(memberIdsArray)
+	hashKey := helper.HashKeycreation(memberIdsArray)
+	// HashKey Creation for private chatroom -- end
+	chatRoom, err := checkHashKeyExistence(ctx, hashKey)
+	if err != nil {
+		er.DebugPrintf(err)
+		return model.ChatRoom{}, er.InternalServerError
+	}
+	tx, err := crConn.Db.Begin()
+	if err != nil {
+		er.DebugPrintf(err)
+		return model.ChatRoom{}, er.InternalServerError
+	}
+	if chatRoom.ChatRoomID == 0 {
+		chatRoom.ChatRoomID, err = createChatRoom(tx, input.CreatorID, nil, input.ChatRoomType, &hashKey)
+		if err != nil {
+			er.DebugPrintf(err)
+			return model.ChatRoom{}, er.InternalServerError
+		}
+		_, err = tx.Exec("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3), ($1, $4, $3) ON CONFLICT (chatroom_id, member_id) DO NOTHING", chatRoom.ChatRoomID, input.CreatorID, time.Now().UTC(), input.ReceiverID)
+		if err != nil {
+			er.DebugPrintf(err)
+			tx.Rollback()
+			return model.ChatRoom{}, er.InternalServerError
+		}
+		tx.Commit()
+	}
+	return chatRoom, nil
+}
+
+func (r *mutationResolver) NewGroupchatRoom(ctx context.Context, input model.NewGroupChatRoom) (model.ChatRoom, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatroom model.ChatRoom
+	var err error
 	chatroom = model.ChatRoom{
 		CreatorID:    input.CreatorID,
-		ChatRoomName: input.ChatRoomName,
+		ChatRoomName: &input.ChatRoomName,
 		ChatRoomType: input.ChatRoomType,
 	}
-	if input.ChatRoomType.String() == "PRIVATE" {
-		// HashKey Creation for private chatroom -- start
-		var memberIdsArray []int
-		memberIdsArray = append(memberIdsArray, input.CreatorID, input.ReceiverID[0])
-		sort.Ints(memberIdsArray)
-		hashKey := helper.HashKeycreation(memberIdsArray)
-		// HashKey Creation for private chatroom -- end
-		isChatRoomExist, err := CheckHashKeyExistence(ctx, hashKey)
+	tx, err := crConn.Db.Begin()
+	if err != nil {
+		er.DebugPrintf(err)
+		return model.ChatRoom{}, er.InternalServerError
+	}
+	chatroom.ChatRoomID, err = createChatRoom(tx, chatroom.CreatorID, chatroom.ChatRoomName, chatroom.ChatRoomType, nil)
+	if err != nil {
+		er.DebugPrintf(err)
+		return model.ChatRoom{}, er.InternalServerError
+	}
+	input.ReceiverID = append(input.ReceiverID, input.CreatorID)
+	for _, memberID := range input.ReceiverID{
+		_, err := tx.Exec("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3) ON CONFLICT (chatroom_id, member_id) DO NOTHING", chatroom.ChatRoomID, memberID, time.Now().UTC())
 		if err != nil {
 			er.DebugPrintf(err)
-			return model.ChatRoom{}, er.InternalServerError
-		}
-		tx, err := crConn.Db.Begin()
-		if err != nil {
-			er.DebugPrintf(err)
-			return model.ChatRoom{}, er.InternalServerError
-		}
-		if isChatRoomExist.ChatRoomID == 0 {
-			row := tx.QueryRow("INSERT INTO chatrooms (creator_id, chatroom_name, chatroom_type, created_at, hashkey) VALUES ($1, $2, $3, $4, $5) RETURNING id", input.CreatorID, input.ChatRoomName, input.ChatRoomType, time.Now(), hashKey)
-			err := row.Scan(&chatroom.ChatRoomID)
-			if err != nil && err == sql.ErrNoRows {
-				er.DebugPrintf(err)
-				tx.Rollback()
-				return model.ChatRoom{}, er.InternalServerError
-			}
-			// Insert member in chatroom
-			_, err = tx.Exec("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3), ($1, $4, $3)", chatroom.ChatRoomID, input.CreatorID, time.Now(), input.ReceiverID[0])
-			if err != nil {
-				er.DebugPrintf(err)
-				tx.Rollback()
-				return model.ChatRoom{}, er.InternalServerError
-			}
-			tx.Commit()
-		} else {
-			chatroom = model.ChatRoom{
-				ChatRoomID:   isChatRoomExist.ChatRoomID,
-				ChatRoomName: input.ChatRoomName,
-				ChatRoomType: input.ChatRoomType,
-				CreatorID:    input.CreatorID,
-			}
-			return chatroom, nil
-		}
-	} else {
-		row := crConn.Db.QueryRow("INSERT INTO members (chatroom_id, member_id, joined_at) SELECT *FROM [INSERT INTO chatrooms (creator_id, chatroom_name, chatroom_type, created_at) VALUES ($1, $2, $3, $4) RETURNING id, creator_id, created_at] RETURNING chatroom_id", input.CreatorID, input.ChatRoomName, input.ChatRoomType, time.Now())
-		err := row.Scan(&chatroom.ChatRoomID)
-		if err != nil {
-			er.DebugPrintf(err)
+			tx.Rollback()
 			return model.ChatRoom{}, er.InternalServerError
 		}
 	}
+	tx.Commit()
 	return chatroom, nil
 }
 
 // Delete chat by particular member
 func (r *mutationResolver) DeleteChat(ctx context.Context, input model.DeleteChat) (model.Member, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	_, err := crConn.Db.Exec("UPDATE members SET deleted_at = $1 WHERE chatroom_id = $2 AND member_id = $3", time.Now(), input.ChatRoomID, input.MemberID)
+	_, err := crConn.Db.Exec("UPDATE members SET deleted_at = $1 WHERE chatroom_id = $2 AND member_id = $3", time.Now().UTC(), input.ChatRoomID, input.MemberID)
 	if err != nil {
 		er.DebugPrintf(err)
 		return model.Member{}, er.InternalServerError
@@ -113,13 +120,13 @@ func (r *mutationResolver) UpdateChatRoomDetail(ctx context.Context, input model
 		ChatRoomName: input.ChatRoomName,
 		UpdateByID:   input.UpdateByID,
 	}
-	isMemberExist, err := CheckMemberExistence(ctx, input.ChatRoomID, *input.UpdateByID)
+	isMemberExist, err := checkMemberExistence(ctx, input.ChatRoomID, *input.UpdateByID)
 	if err != nil {
 		er.DebugPrintf(err)
 		return model.ChatRoom{}, er.InternalServerError
 	}
 	if isMemberExist {
-		row := crConn.Db.QueryRow("UPDATE chatrooms SET (chatroom_name, updated_by, updated_at) = ($1, $2, $3) WHERE id = $4 RETURNING updated_at", input.ChatRoomName, input.UpdateByID, time.Now(), input.ChatRoomID)
+		row := crConn.Db.QueryRow("UPDATE chatrooms SET (chatroom_name, updated_by, updated_at) = ($1, $2, $3) WHERE id = $4 RETURNING updated_at", input.ChatRoomName, input.UpdateByID, time.Now().UTC(), input.ChatRoomID)
 		err := row.Scan(&chatroom.UpdatedAt)
 		if err != nil {
 			er.DebugPrintf(err)
@@ -154,13 +161,13 @@ func (r *subscriptionResolver) ChatRoomDetailUpdate(ctx context.Context, chatRoo
 func (r *mutationResolver) DeleteChatRoom(ctx context.Context, input model.DeleteChatRoom) (model.ChatRoom, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatroom model.ChatRoom
-	isCreator, err := CheckCreator(ctx, input.ChatRoomID, input.CreaorID)
+	isCreator, err := checkCreator(ctx, input.ChatRoomID, input.CreatorID)
 	if err != nil {
 		er.DebugPrintf(err)
 		return model.ChatRoom{}, er.InternalServerError
 	}
 	if isCreator {
-		totalChatRoomMember, err := CountChatRoomMember(ctx, input.ChatRoomID)
+		totalChatRoomMember, err := countChatRoomMember(ctx, input.ChatRoomID)
 		if err != nil {
 			er.DebugPrintf(err)
 			return model.ChatRoom{}, er.InternalServerError
@@ -224,7 +231,7 @@ func (r *chatRoomResolver) UpdateBy(ctx context.Context, obj *model.ChatRoom) (*
 	return &user, nil
 }
 
-func ChatRoomData(ctx context.Context) ([]model.ChatRoom, error) {
+func chatRoomData(ctx context.Context) ([]model.ChatRoom, error) {
 	var chatroom model.ChatRoom
 	var chatrooms []model.ChatRoom
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
@@ -240,7 +247,7 @@ func ChatRoomData(ctx context.Context) ([]model.ChatRoom, error) {
 	}
 	return chatrooms, nil
 }
-func CheckHashKeyExistence(ctx context.Context, hashKey string) (model.ChatRoom, error) {
+func checkHashKeyExistence(ctx context.Context, hashKey string) (model.ChatRoom, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatroom model.ChatRoom
 	row := crConn.Db.QueryRow("SELECT id, creator_id, chatroom_name, chatroom_type FROM chatrooms WHERE hashkey = $1", hashKey)
@@ -252,7 +259,7 @@ func CheckHashKeyExistence(ctx context.Context, hashKey string) (model.ChatRoom,
 	return chatroom, nil
 }
 
-func CheckCreator(ctx context.Context, chatRoomID int, creatorID int) (bool, error) {
+func checkCreator(ctx context.Context, chatRoomID int, creatorID int) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var isCreator bool
 	row := crConn.Db.QueryRow("SELECT true FROM chatrooms WHERE id = $1 AND creator_id = $2", chatRoomID, creatorID)
@@ -264,7 +271,7 @@ func CheckCreator(ctx context.Context, chatRoomID int, creatorID int) (bool, err
 	return isCreator, nil
 }
 
-func CountChatRoomMember(ctx context.Context, chatRoomID int) (int, error) {
+func countChatRoomMember(ctx context.Context, chatRoomID int) (int, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var totalChatRoomMember int
 	row := crConn.Db.QueryRow("SELECT count(member_id) FROM members WHERE chatroom_id = $1", chatRoomID)
@@ -275,3 +282,15 @@ func CountChatRoomMember(ctx context.Context, chatRoomID int) (int, error) {
 	}
 	return totalChatRoomMember, nil
 }
+
+func createChatRoom(tx *sql.Tx, creator_id int, chatroom_name *string, chatroom_type model.ChatRoomType, hashkey *string) (int, error) {
+	var chatRoomID int
+	row := tx.QueryRow("INSERT INTO chatrooms (creator_id, chatroom_name, chatroom_type, created_at, hashkey) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (creator_is, chatroom_name) DO NOTHING RETURNING id", creator_id, chatroom_name, chatroom_type, time.Now(), hashkey)
+	err := row.Scan(&chatRoomID)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+	return chatRoomID, nil
+}
+

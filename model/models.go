@@ -53,11 +53,17 @@ type ChatRoom struct {
 	DeleteMessageObservers map[int]chan ChatConversation `json:"deleteMessageObserver"`
 }
 
-type NewChatRoom struct {
+type NewGroupChatRoom struct {
 	CreatorID    int          `json:"creatorID"`
-	ChatRoomName *string      `json:"chatRoomName"`
+	ChatRoomName string       `json:"chatRoomName"`
 	ChatRoomType ChatRoomType `json:"chatRoomType"`
 	ReceiverID   []int        `json:"receiverID"`
+}
+
+type NewPrivateChatRoom struct {
+	CreatorID    int          `json:"creatorID"`
+	ChatRoomType ChatRoomType `json:"chatRoomType"`
+	ReceiverID   int          `json:"receiverID"`
 }
 
 type UpdateChatRoomDetail struct {
@@ -75,14 +81,14 @@ type Member struct {
 	ChatRoomLists         [][]ChatRoomList            `json:"chatRoomLists"`
 	ChatRoomListObservers map[int]chan []ChatRoomList `json:"chatRoomList"`
 }
-type NewChatRoomMember struct {
-	ChatRoomID int `json:"chatRoomID"`
-	MemberID   int `json:"memberID"`
+type NewChatRoomMembers struct {
+	ChatRoomID int   `json:"chatRoomID"`
+	MemberIDs   []int `json:"memberIDs"`
 }
 
 type DeleteChatRoom struct {
 	ChatRoomID int `json:"chatRoomID"`
-	CreaorID   int `json:"creaorID"`
+	CreatorID   int `json:"creatorID"`
 }
 
 type LeaveChatRoom struct {

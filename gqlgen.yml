@@ -16,16 +16,18 @@ models:
     model: github.com/aneri/new_chat/model.NewUser
   ChatRoom:
     model: github.com/aneri/new_chat/model.ChatRoom
-  NewChatRoom:
-    model: github.com/aneri/new_chat/model.NewChatRoom
+  NewPrivateChatRoom:
+    model: github.com/aneri/new_chat/model.NewPrivateChatRoom
+  NewGroupChatRoom:
+    model: github.com/aneri/new_chat/model.NewGroupChatRoom
   ChatConversation:
     model: github.com/aneri/new_chat/model.ChatConversation
   NewMessage:
     model: github.com/aneri/new_chat/model.NewMessage
   Member:
     model: github.com/aneri/new_chat/model.Member
-  NewChatRoomMember:
-    model: github.com/aneri/new_chat/model.NewChatRoomMember
+  NewChatRoomMembers:
+    model: github.com/aneri/new_chat/model.NewChatRoomMembers
   ID:
     model: github.com/aneri/new_chat/model.ID
   State:

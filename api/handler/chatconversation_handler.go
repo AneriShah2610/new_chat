@@ -12,59 +12,45 @@ import (
 	"github.com/aneri/new_chat/model"
 )
 
-var deleteMessageResolver map[int]chan model.ChatConversation
-
-func init() {
-	deleteMessageResolver = map[int]chan model.ChatConversation{}
-}
-
 // Retrieve chat conversation by chatRoom Id
 func (r *queryResolver) ChatconversationByChatRoomID(ctx context.Context, chatRoomID int, memberID int) ([]model.ChatConversation, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatconversation model.ChatConversation
 	var chattconversationarr []model.ChatConversation
-	isMemberExist, err := CheckMemberExistence(ctx, chatRoomID, memberID)
+	var rows *sql.Rows
+	isMemberExist, err := checkMemberExistence(ctx, chatRoomID, memberID)
 	if err != nil {
 		er.DebugPrintf(err)
 		return []model.ChatConversation{}, er.InternalServerError
 	}
 	if isMemberExist {
-		isDeleteFlagUpdate, err := ChehckDeleteFlag(ctx, chatRoomID, memberID)
+		isDeleted, err := checkIsDeleted(ctx, chatRoomID, memberID)
 		if err != nil {
 			er.DebugPrintf(err)
 			return []model.ChatConversation{}, er.InternalServerError
 		}
 
-		if isDeleteFlagUpdate != nil {
-			rows, err := crConn.Db.Query("SELECT chatconversation.id, chatconversation.chatroom_id, sender_id, message, message_type, message_status, message_parent_id, created_at, updatedat FROM chatconversation LEFT JOIN members ON members.deleted_at <= chatconversation.created_at WHERE chatconversation.chatroom_id = $1 AND chatconversation.chatroom_id = members.chatroom_id GROUP BY chatconversation.chatroom_id,sender_id, message,message_type, message_parent_id, message_status, created_at, updatedat, chatconversation.id ORDER BY chatconversation.id ASC", chatRoomID)
+		if isDeleted  {
+				rows, err = crConn.Db.Query("SELECT chatconversation.id, chatconversation.chatroom_id, sender_id, message, message_type, message_status, message_parent_id, created_at, updatedat FROM chatconversation LEFT JOIN members ON members.deleted_at <= chatconversation.created_at WHERE chatconversation.chatroom_id = $1 AND chatconversation.chatroom_id = members.chatroom_id GROUP BY chatconversation.chatroom_id,sender_id, message,message_type, message_parent_id, message_status, created_at, updatedat, chatconversation.id ORDER BY chatconversation.id ASC", chatRoomID)
 			if err != nil {
 				er.DebugPrintf(err)
 				return []model.ChatConversation{}, er.InternalServerError
-			}
-			defer rows.Close()
-			for rows.Next() {
-				err := rows.Scan(&chatconversation.MessageID, &chatconversation.ChatRoomID, &chatconversation.SenderID, &chatconversation.Message, &chatconversation.MessageType, &chatconversation.MessageStatus, &chatconversation.MessageParentID, &chatconversation.CreatedAt, &chatconversation.UpdatedAt)
-				if err != nil {
-					er.DebugPrintf(err)
-					return []model.ChatConversation{}, er.InternalServerError
-				}
-				chattconversationarr = append(chattconversationarr, chatconversation)
 			}
 		} else {
-			rows, err := crConn.Db.Query("SELECT chatconversation.id, chatconversation.chatroom_id, sender_id, message, message_type, message_status, message_parent_id, created_at, updatedat FROM chatconversation LEFT JOIN members ON members.joined_at <= chatconversation.created_at WHERE chatconversation.chatroom_id = $1 AND chatconversation.chatroom_id = members.chatroom_id GROUP BY chatconversation.chatroom_id,sender_id, message,message_type, message_parent_id, message_status, created_at, updatedat, chatconversation.id ORDER BY chatconversation.id ASC", chatRoomID)
+			rows, err = crConn.Db.Query("SELECT chatconversation.id, chatconversation.chatroom_id, sender_id, message, message_type, message_status, message_parent_id, created_at, updatedat FROM chatconversation LEFT JOIN members ON members.joined_at <= chatconversation.created_at WHERE chatconversation.chatroom_id = $1 AND chatconversation.chatroom_id = members.chatroom_id GROUP BY chatconversation.chatroom_id,sender_id, message,message_type, message_parent_id, message_status, created_at, updatedat, chatconversation.id ORDER BY chatconversation.id ASC", chatRoomID)
 			if err != nil {
 				er.DebugPrintf(err)
 				return []model.ChatConversation{}, er.InternalServerError
 			}
-			defer rows.Close()
-			for rows.Next() {
-				err := rows.Scan(&chatconversation.MessageID, &chatconversation.ChatRoomID, &chatconversation.SenderID, &chatconversation.Message, &chatconversation.MessageType, &chatconversation.MessageStatus, &chatconversation.MessageParentID, &chatconversation.CreatedAt, &chatconversation.UpdatedAt)
-				if err != nil {
-					er.DebugPrintf(err)
-					return []model.ChatConversation{}, er.InternalServerError
-				}
-				chattconversationarr = append(chattconversationarr, chatconversation)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			err := rows.Scan(&chatconversation.MessageID, &chatconversation.ChatRoomID, &chatconversation.SenderID, &chatconversation.Message, &chatconversation.MessageType, &chatconversation.MessageStatus, &chatconversation.MessageParentID, &chatconversation.CreatedAt, &chatconversation.UpdatedAt)
+			if err != nil {
+				er.DebugPrintf(err)
+				return []model.ChatConversation{}, er.InternalServerError
 			}
+			chattconversationarr = append(chattconversationarr, chatconversation)
 		}
 	}
 	return chattconversationarr, nil
@@ -74,7 +60,7 @@ func (r *queryResolver) MemberListByChatRoomID(ctx context.Context, chatRoomID i
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var member model.Member
 	var members []model.Member
-	isMemberExist, err := CheckMemberExistence(ctx, chatRoomID, memberID)
+	isMemberExist, err := checkMemberExistence(ctx, chatRoomID, memberID)
 	if err != nil {
 		er.DebugPrintf(err)
 		return []model.Member{}, er.InternalServerError
@@ -121,6 +107,7 @@ func (r *queryResolver) ChatRoomListByMemberID(ctx context.Context, memberID int
 			er.DebugPrintf(err)
 			return []model.ChatRoomList{}, er.InternalServerError
 		}
+
 		switch chatroomList.ChatRoomType {
 
 		case "PRIVATE":
@@ -149,14 +136,14 @@ func (r *subscriptionResolver) ChatRoomListByMember(ctx context.Context, memberI
 	}
 	id, _ := strconv.Atoi(helper.RandString(20))
 	chatroomListEvenet := make(chan []model.ChatRoomList, 1)
-	go func(){
-		<- ctx.Done()
+	go func() {
+		<-ctx.Done()
 		r.mu.Lock()
 		delete(chatroomlist.ChatRoomListObservers, id)
 		r.mu.Unlock()
 	}()
 	chatroomlist.ChatRoomListObservers[id] = chatroomListEvenet
-	return  chatroomListEvenet, nil
+	return chatroomListEvenet, nil
 }
 
 // Create New Message
@@ -176,7 +163,7 @@ func (r *mutationResolver) NewMessage(ctx context.Context, input model.NewMessag
 		MessageParentID: input.MessageParentID,
 		MessageStatus:   input.MessageStatus,
 	}
-	isMemberExist, err := CheckMemberExistence(ctx, input.ChatRoomID, input.SenderID)
+	isMemberExist, err := checkMemberExistence(ctx, input.ChatRoomID, input.SenderID)
 	if err != nil {
 		er.DebugPrintf(err)
 		return model.ChatConversation{}, er.InternalServerError
@@ -234,7 +221,7 @@ func (r *mutationResolver) UpdateMessage(ctx context.Context, input *model.Updat
 		SenderID:   input.SenderID,
 		Message:    *input.Message,
 	}
-	isMemberExist, err := CheckMemberExistence(ctx, input.ChatRoomID, input.SenderID)
+	isMemberExist, err := checkMemberExistence(ctx, input.ChatRoomID, input.SenderID)
 	if err != nil {
 		er.DebugPrintf(err)
 		return model.ChatConversation{}, er.InternalServerError
@@ -299,7 +286,7 @@ func (r *mutationResolver) DeleteMessage(ctx context.Context, input *model.Delet
 	}
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatconversation model.ChatConversation
-	isMemberExist, err := CheckMemberExistence(ctx, input.ChatRoomID, input.DeleteByID)
+	isMemberExist, err := checkMemberExistence(ctx, input.ChatRoomID, input.DeleteByID)
 	if err != nil {
 		er.DebugPrintf(err)
 		return model.ChatConversation{}, er.InternalServerError
@@ -366,16 +353,19 @@ func (r *chatConversationResolver) Sender(ctx context.Context, obj *model.ChatCo
 	return sender, nil
 }
 
-func ChehckDeleteFlag(ctx context.Context, chatRoomID int, memberID int) (*time.Time, error) {
+func checkIsDeleted(ctx context.Context, chatRoomID int, memberID int) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var member model.Member
 	row := crConn.Db.QueryRow("SELECT deleted_at FROM members WHERE chatroom_id = $1 AND member_id = $2", chatRoomID, memberID)
 	err := row.Scan(&member.DeleteAt)
 	if err != nil && err != sql.ErrNoRows {
 		er.DebugPrintf(err)
-		return nil, er.InternalServerError
+		return false, er.InternalServerError
 	}
-	return member.DeleteAt, nil
+	if member.DeleteAt == nil {
+		return false, nil
+	}
+	return true, nil
 }
 func CheckMemberOwner(ctx context.Context, messageID int, senderID int) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)

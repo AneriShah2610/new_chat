@@ -75,15 +75,20 @@ input NewUser{
     profilePicture: String
     bio: String
 }
-input NewChatRoom{
+input NewPrivateChatRoom{
     creatorID: ID!
-    chatRoomName: String
     chatRoomType: ChatRoomType!
-    receiverID: [ID!]!
+    receiverID: ID!
 }
-input NewChatRoomMember{
+input NewGroupChatRoom{
+    creatorID: ID!
+    chatRoomName: String!
+    chatRoomType: ChatRoomType!
+    receiverID: [ID!]
+}
+input NewChatRoomMembers{
     chatRoomID: ID!
-    memberID: ID!
+    memberIDs: [ID!]
 }
 input NewMessage{
     chatRoomID: ID!
@@ -122,7 +127,7 @@ input UpdateChatRoomDetail{
 }
 input DeleteChatRoom{
     chatRoomID: ID!
-    creaorID: ID!
+    creatorID: ID!
 }
 input DeleteMessage{
     chatRoomID: ID!
@@ -144,8 +149,9 @@ type Subscription{
 }
 type Mutation{
     newUser(input: NewUser!): User!
-    newChatRoom(input: NewChatRoom!): ChatRoom!
-    newChatRoomMember(input: NewChatRoomMember!): Member!
+    newPrivateChatRoom(input: NewPrivateChatRoom!): ChatRoom!
+    newGroupchatRoom(input: NewGroupChatRoom!): ChatRoom!
+    newChatRoomMembers(input: NewChatRoomMembers!): Boolean!
     newMessage(input: NewMessage!): ChatConversation!
     updateMessage(input: UpdateMessage): ChatConversation!
     updateMessageStatus(input: UpdateMessageStatus!): ChatConversation!
