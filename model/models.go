@@ -83,12 +83,12 @@ type Member struct {
 }
 type NewChatRoomMembers struct {
 	ChatRoomID int   `json:"chatRoomID"`
-	MemberIDs   []int `json:"memberIDs"`
+	MemberIDs  []int `json:"memberIDs"`
 }
 
 type DeleteChatRoom struct {
 	ChatRoomID int `json:"chatRoomID"`
-	CreatorID   int `json:"creatorID"`
+	CreatorID  int `json:"creatorID"`
 }
 
 type LeaveChatRoom struct {
@@ -226,11 +226,12 @@ const (
 	StateUnread State = "UNREAD"
 	StateRead   State = "READ"
 	StateDelete State = "DELETE"
+	StateAdd    State = "ADD"
 )
 
 func (e State) IsValid() bool {
 	switch e {
-	case StateSend, StateUnread, StateRead, StateDelete:
+	case StateSend, StateUnread, StateRead, StateDelete, StateAdd:
 		return true
 	}
 	return false

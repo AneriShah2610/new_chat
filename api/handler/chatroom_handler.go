@@ -3,20 +3,16 @@ package handler
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"sort"
+	"strconv"
+	"time"
+
 	"github.com/aneri/new_chat/api/dal"
 	"github.com/aneri/new_chat/api/helper"
 	er "github.com/aneri/new_chat/error"
 	"github.com/aneri/new_chat/model"
-	"sort"
-	"time"
 )
 
-var updateChatRoomDetails map[int]chan model.ChatRoom
-
-func init() {
-	updateChatRoomDetails = map[int]chan model.ChatRoom{}
-}
 
 // Retrieve all Chatrooms either it is private chat or group chat
 func (r *queryResolver) ChatRooms(ctx context.Context) ([]model.ChatRoom, error) {
@@ -32,35 +28,31 @@ func (r *queryResolver) ChatRooms(ctx context.Context) ([]model.ChatRoom, error)
 func (r *mutationResolver) NewPrivateChatRoom(ctx context.Context, input model.NewPrivateChatRoom) (model.ChatRoom, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var err error
+
 	// HashKey Creation for private chatroom -- start
 	var memberIdsArray []int
 	memberIdsArray = append(memberIdsArray, input.CreatorID, input.ReceiverID)
 	sort.Ints(memberIdsArray)
 	hashKey := helper.HashKeycreation(memberIdsArray)
 	// HashKey Creation for private chatroom -- end
+
 	chatRoom, err := checkHashKeyExistence(ctx, hashKey)
 	if err != nil {
 		er.DebugPrintf(err)
 		return model.ChatRoom{}, er.InternalServerError
 	}
-	tx, err := crConn.Db.Begin()
-	if err != nil {
-		er.DebugPrintf(err)
-		return model.ChatRoom{}, er.InternalServerError
-	}
+
 	if chatRoom.ChatRoomID == 0 {
-		chatRoom.ChatRoomID, err = createChatRoom(tx, input.CreatorID, nil, input.ChatRoomType, &hashKey)
+		chatRoom.ChatRoomID, err = createChatRoom(crConn, input.CreatorID, nil, input.ChatRoomType, &hashKey)
 		if err != nil {
 			er.DebugPrintf(err)
 			return model.ChatRoom{}, er.InternalServerError
 		}
-		_, err = tx.Exec("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3), ($1, $4, $3) ON CONFLICT (chatroom_id, member_id) DO NOTHING", chatRoom.ChatRoomID, input.CreatorID, time.Now().UTC(), input.ReceiverID)
+		_, err = crConn.Db.Exec("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3), ($1, $4, $3) ON CONFLICT (chatroom_id, member_id) DO NOTHING", chatRoom.ChatRoomID, input.CreatorID, time.Now().UTC(), input.ReceiverID)
 		if err != nil {
 			er.DebugPrintf(err)
-			tx.Rollback()
 			return model.ChatRoom{}, er.InternalServerError
 		}
-		tx.Commit()
 	}
 	return chatRoom, nil
 }
@@ -74,26 +66,30 @@ func (r *mutationResolver) NewGroupchatRoom(ctx context.Context, input model.New
 		ChatRoomName: &input.ChatRoomName,
 		ChatRoomType: input.ChatRoomType,
 	}
-	tx, err := crConn.Db.Begin()
-	if err != nil {
-		er.DebugPrintf(err)
-		return model.ChatRoom{}, er.InternalServerError
-	}
-	chatroom.ChatRoomID, err = createChatRoom(tx, chatroom.CreatorID, chatroom.ChatRoomName, chatroom.ChatRoomType, nil)
+	chatroom.ChatRoomID, err = createChatRoom(crConn, chatroom.CreatorID, chatroom.ChatRoomName, chatroom.ChatRoomType, nil)
 	if err != nil {
 		er.DebugPrintf(err)
 		return model.ChatRoom{}, er.InternalServerError
 	}
 	input.ReceiverID = append(input.ReceiverID, input.CreatorID)
-	for _, memberID := range input.ReceiverID{
-		_, err := tx.Exec("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3) ON CONFLICT (chatroom_id, member_id) DO NOTHING", chatroom.ChatRoomID, memberID, time.Now().UTC())
+	for _, memberID := range input.ReceiverID {
+		_, err := crConn.Db.Exec("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3) ON CONFLICT (chatroom_id, member_id) DO NOTHING", chatroom.ChatRoomID, memberID, time.Now().UTC())
 		if err != nil {
 			er.DebugPrintf(err)
-			tx.Rollback()
 			return model.ChatRoom{}, er.InternalServerError
 		}
+		msg := strconv.Itoa(memberID) + " have added in this group"
+		_, err = crConn.Db.Exec("INSERT INTO chatconversation (chatroom_id, sender_id, message, message_type, message_status, created_at) VALUES ($1, $2, $3, $4, $5, $6)", chatroom.ChatRoomID, memberID, msg, model.MessageTypeText, model.StateAdd, time.Now().UTC())
+		if err != nil {
+			er.DebugPrintf(err)
+			return  model.ChatRoom{}, er.InternalServerError
+		}
+		_, err = chatRoomListByMemberID(ctx, memberID)
+		if err != nil {
+			er.DebugPrintf(err)
+			return  model.ChatRoom{}, er.InternalServerError
+		}
 	}
-	tx.Commit()
 	return chatroom, nil
 }
 
@@ -105,12 +101,16 @@ func (r *mutationResolver) DeleteChat(ctx context.Context, input model.DeleteCha
 		er.DebugPrintf(err)
 		return false, er.InternalServerError
 	}
-	chatRoomListByMemberID(ctx, input.MemberID)
+	_, err = chatRoomListByMemberID(ctx, input.MemberID)
+	if err != nil {
+		er.DebugPrintf(err)
+		return  false, er.InternalServerError
+	}
 	return true, nil
 }
-func (r *subscriptionResolver) ChatDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
-	panic("not implemented")
-}
+//func (r *subscriptionResolver) ChatDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
+//	panic("not implemented")
+//}
 
 // Update chatroom detail
 func (r *mutationResolver) UpdateChatRoomDetail(ctx context.Context, input model.UpdateChatRoomDetail) (model.ChatRoom, error) {
@@ -139,24 +139,17 @@ func (r *mutationResolver) UpdateChatRoomDetail(ctx context.Context, input model
 			UpdateByID:   input.UpdateByID,
 		}
 	}
-	channelMsg := updateChatRoomDetails[input.ChatRoomID]
-	if channelMsg != nil {
-		channelMsg <- chatroom
+	err = fetchMemberIDsAndUpdateCharoomList(ctx, crConn, input.ChatRoomID)
+	if err != nil {
+		er.DebugPrintf(err)
+		return model.ChatRoom{}, er.InternalServerError
 	}
 	return chatroom, nil
 }
-
-func (r *subscriptionResolver) ChatRoomDetailUpdate(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
-	chatevent := make(chan model.ChatRoom, 1)
-	updateChatRoomDetails[chatRoomID] = chatevent
-	go func() {
-		<-ctx.Done()
-		r.mu.Lock()
-		delete(updateChatRoomDetails, chatRoomID)
-		r.mu.Unlock()
-	}()
-	return chatevent, nil
-}
+//
+//func (r *subscriptionResolver) ChatRoomDetailUpdate(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
+//	panic("not implemented)
+//}
 
 // Delete group chatroom only by creator i.e. admin
 func (r *mutationResolver) DeleteChatRoom(ctx context.Context, input model.DeleteChatRoom) (model.ChatRoom, error) {
@@ -207,7 +200,6 @@ func (r *chatRoomResolver) Members(ctx context.Context, obj *model.ChatRoom) ([]
 
 func (r *chatRoomResolver) Creator(ctx context.Context, obj *model.ChatRoom) (model.User, error) {
 	var creator model.User
-	fmt.Println(obj.ChatRoomID)
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	row := crConn.Db.QueryRow("SELECT users.id, username, first_name, last_name, email, contact, bio, profile_picture, users.created_at, users.updated_at FROM users, chatrooms WHERE chatrooms.id = $1 AND chatrooms.creator_id = users.id", obj.ChatRoomID)
 	err := row.Scan(&creator.ID, &creator.Username, &creator.FirstName, &creator.LastName, &creator.Email, &creator.Contact, &creator.Bio, &creator.ProfilePicture, &creator.CreatedAt, &creator.UpdatedAt)
@@ -276,7 +268,7 @@ func countChatRoomMember(ctx context.Context, chatRoomID int) (int, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var totalChatRoomMember int
 	row := crConn.Db.QueryRow("SELECT count(member_id) FROM members WHERE chatroom_id = $1", chatRoomID)
-	err := row.Scan(totalChatRoomMember)
+	err := row.Scan(&totalChatRoomMember)
 	if err != nil && err != sql.ErrNoRows {
 		er.DebugPrintf(err)
 		return 0, er.InternalServerError
@@ -284,14 +276,12 @@ func countChatRoomMember(ctx context.Context, chatRoomID int) (int, error) {
 	return totalChatRoomMember, nil
 }
 
-func createChatRoom(tx *sql.Tx, creator_id int, chatroom_name *string, chatroom_type model.ChatRoomType, hashkey *string) (int, error) {
+func createChatRoom(crConn *dal.DbConnection, creator_id int, chatroom_name *string, chatroom_type model.ChatRoomType, hashkey *string) (int, error) {
 	var chatRoomID int
-	row := tx.QueryRow("INSERT INTO chatrooms (creator_id, chatroom_name, chatroom_type, created_at, hashkey) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (creator_id, chatroom_name) DO NOTHING RETURNING id", creator_id, chatroom_name, chatroom_type, time.Now(), hashkey)
+	row := crConn.Db.QueryRow("INSERT INTO chatrooms (creator_id, chatroom_name, chatroom_type, created_at, hashkey) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (creator_id, chatroom_name) DO NOTHING RETURNING id", creator_id, chatroom_name, chatroom_type, time.Now(), hashkey)
 	err := row.Scan(&chatRoomID)
 	if err != nil {
-		tx.Rollback()
 		return 0, err
 	}
 	return chatRoomID, nil
 }
-

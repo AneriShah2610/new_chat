@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"database/sql"
+	"strconv"
 	"time"
 
 	"github.com/aneri/new_chat/api/dal"
@@ -84,7 +85,12 @@ func (r *queryResolver) MemberListByChatRoomID(ctx context.Context, chatRoomID i
 }
 
 func (r *queryResolver) ChatRoomListByMemberID(ctx context.Context, memberID int) ([]model.ChatRoomList, error) {
-	return chatRoomListByMemberID(ctx, memberID)
+	chatroomList, err := chatRoomListByMemberID(ctx, memberID)
+ 	if err != nil {
+		er.DebugPrintf(err)
+		return  []model.ChatRoomList{}, er.InternalServerError
+	}
+	return chatroomList, nil
 }
 func (r *subscriptionResolver) ChatRoomListByMember(ctx context.Context, memberID int) (<-chan []model.ChatRoomList, error) {
 	chatroomlist := g.ChatRoomList[memberID]
@@ -92,15 +98,15 @@ func (r *subscriptionResolver) ChatRoomListByMember(ctx context.Context, memberI
 		chatroomlist = &model.Member{MemberID: memberID, ChatRoomListObservers: map[int]chan []model.ChatRoomList{}}
 		g.ChatRoomList[memberID] = chatroomlist
 	}
-	//id, _ := strconv.Atoi(helper.RandString(20))
+	id, _ := strconv.Atoi(helper.RandString(20))
 	chatroomListEvenet := make(chan []model.ChatRoomList, 1)
 	go func() {
 		<-ctx.Done()
 		r.mu.Lock()
-		delete(chatroomlist.ChatRoomListObservers, memberID)
+		delete(chatroomlist.ChatRoomListObservers, id)
 		r.mu.Unlock()
 	}()
-	chatroomlist.ChatRoomListObservers[memberID] = chatroomListEvenet
+	chatroomlist.ChatRoomListObservers[id] = chatroomListEvenet
 	return chatroomListEvenet, nil
 }
 
@@ -127,7 +133,7 @@ func (r *mutationResolver) NewMessage(ctx context.Context, input model.NewMessag
 		return model.ChatConversation{}, er.InternalServerError
 	}
 	if isMemberExist {
-		row := crConn.Db.QueryRow("INSERT INTO chatconversation (chatroom_id, sender_id, message, message_type, message_status, message_parent_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at", input.ChatRoomID, input.SenderID, input.Message, input.MessageType, input.MessageStatus, input.MessageParentID, time.Now())
+		row := crConn.Db.QueryRow("INSERT INTO chatconversation (chatroom_id, sender_id, message, message_type, message_status, message_parent_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at", input.ChatRoomID, input.SenderID, input.Message, input.MessageType, input.MessageStatus, input.MessageParentID, time.Now().UTC())
 		err := row.Scan(&chatconversation.MessageID, &chatconversation.CreatedAt)
 		if err != nil {
 			er.DebugPrintf(err)
@@ -138,7 +144,25 @@ func (r *mutationResolver) NewMessage(ctx context.Context, input model.NewMessag
 	for _, observer := range addChatConvo.AddMessageObservers {
 		observer <- chatconversation
 	}
-	chatRoomListByMemberID(ctx, input.SenderID)
+	rows, err := crConn.Db.Query("select member_id from members where chatroom_id = $1 and member_id != $2", input.ChatRoomID, input.SenderID)
+	for rows.Next(){
+		var receiverID int
+		err = rows.Scan(&receiverID)
+		if err != nil {
+			er.DebugPrintf(err)
+			return model.ChatConversation{}, er.InternalServerError
+		}
+		_, err := chatRoomListByMemberID(ctx, receiverID)
+		if err != nil {
+			er.DebugPrintf(err)
+			return  model.ChatConversation{}, er.InternalServerError
+		}
+	}
+	_, err =  chatRoomListByMemberID(ctx, input.SenderID)
+	if err != nil {
+		er.DebugPrintf(err)
+		return  model.ChatConversation{}, er.InternalServerError
+	}
 	return chatconversation, nil
 }
 
@@ -192,7 +216,7 @@ func (r *mutationResolver) UpdateMessage(ctx context.Context, input *model.Updat
 			return model.ChatConversation{}, er.InternalServerError
 		}
 		if isMessageOwner {
-			row := crConn.Db.QueryRow("UPDATE chatconversation SET (message, updatedat) = ($1, $2) where id = $3 RETURNING message_status, message_parent_id, created_at, updatedat", input.Message, time.Now(), input.MessageID)
+			row := crConn.Db.QueryRow("UPDATE chatconversation SET (message, updatedat) = ($1, $2) where id = $3 RETURNING message_status, message_parent_id, created_at, updatedat", input.Message, time.Now().UTC(), input.MessageID)
 			err := row.Scan(&chatconversation.MessageStatus, &chatconversation.MessageParentID, &chatconversation.CreatedAt, &chatconversation.UpdatedAt)
 			if err != nil {
 				er.DebugPrintf(err)
@@ -385,8 +409,8 @@ func chatRoomListByMemberID(ctx context.Context, memberID int) ([]model.ChatRoom
 
 	chatroomLists, err =  fetchChatRoomList(ctx, memberID)
 	if err != nil {
-		er.DebugPrintf(err)
-		return []model.ChatRoomList{}, er.InternalServerError
+		//er.DebugPrintf(err)
+		return []model.ChatRoomList{}, err
 	}
 	chatroomlist.ChatRoomLists = append(chatroomlist.ChatRoomLists, chatroomLists)
 	for _, observer := range chatroomlist.ChatRoomListObservers {

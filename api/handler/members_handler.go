@@ -7,6 +7,7 @@ import (
 	"github.com/aneri/new_chat/api/dal"
 	er "github.com/aneri/new_chat/error"
 	"github.com/aneri/new_chat/model"
+	"strconv"
 	"time"
 )
 
@@ -19,19 +20,30 @@ func (r *mutationResolver) NewChatRoomMembers(ctx context.Context, input model.N
 		return false, er.InternalServerError
 	}
 	if chatRoomType == "GROUP" {
-		for _, memberID := range input.MemberIDs{
+		for _, memberID := range input.MemberIDs {
 			_, err := crConn.Db.Exec("INSERT INTO members (chatroom_id, member_id, joined_at) VALUES ($1, $2, $3) ON CONFLICT (chatroom_id, member_id) DO NOTHING RETURNING id, joined_at", input.ChatRoomID, memberID, time.Now().UTC())
+			if err != nil {
+				er.DebugPrintf(err)
+				return false, er.InternalServerError
+			}
+			msg := strconv.Itoa(memberID) + " have added in this group"
+			_, err = crConn.Db.Exec("INSERT INTO chatconversation (chatroom_id, sender_id, message, message_type, message_status, created_at) VALUES ($1, $2, $3, $4, $5, $6)", input.ChatRoomID, memberID, msg, model.MessageTypeText, model.StateAdd, time.Now().UTC())
 			if err != nil {
 				er.DebugPrintf(err)
 				return false, er.InternalServerError
 			}
 		}
 	}
+	err = fetchMemberIDsAndUpdateCharoomList(ctx, crConn, input.ChatRoomID)
+	if err != nil {
+		er.DebugPrintf(err)
+		return false, er.InternalServerError
+	}
 	return true, nil
 }
-func (r *subscriptionResolver) AddNewMemberInChatRoom(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
-	panic("Not implemented")
-}
+//func (r *subscriptionResolver) AddNewMemberInChatRoom(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
+//	panic("Not implemented")
+//}
 
 // Leave chatroom only for group chat
 func (r *mutationResolver) LeaveChatRoom(ctx context.Context, input model.LeaveChatRoom) (string, error) {
@@ -58,10 +70,10 @@ func (r *mutationResolver) LeaveChatRoom(ctx context.Context, input model.LeaveC
 	}
 	return fmt.Sprintf("%s is leave from %s", input.MemberID, input.ChatRoomID), nil
 }
-
-func (r *subscriptionResolver) ChatRoomLeave(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
-	panic("not implemented")
-}
+//
+//func (r *subscriptionResolver) ChatRoomLeave(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
+//	panic("not implemented")
+//}
 
 func (r *memberResolver) Member(ctx context.Context, obj *model.Member) (model.User, error) {
 	var memberInfo model.User
@@ -98,4 +110,20 @@ func checkMemberExistence(ctx context.Context, chatRoomID int, memberID int) (bo
 		return false, er.InternalServerError
 	}
 	return isMemberExist, nil
+}
+func fetchMemberIDsAndUpdateCharoomList(ctx context.Context, crConn *dal.DbConnection, chatRoomID int) error {
+	rows, err := crConn.Db.Query("select member_id from members where chatroom_id = $1", chatRoomID)
+	for rows.Next() {
+		var memberID int
+		err = rows.Scan(&memberID)
+		if err != nil {
+			return err
+		}
+		fmt.Println(memberID)
+		_, err = chatRoomListByMemberID(ctx, memberID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

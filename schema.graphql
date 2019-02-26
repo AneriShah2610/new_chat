@@ -65,6 +65,7 @@ enum State{
     UNREAD
     READ
     DELETE
+    ADD
 }
 input NewUser{
     userName: String!
@@ -140,11 +141,11 @@ type Subscription{
     messageStatusUpdate(messageID: ID!, chatRoomID: ID!): ChatConversation!
     messageUpdate(chatRoomID: ID!): ChatConversation!
     messageDelete(chatRoomID: ID!): ChatConversation!
-    chatRoomLeave(chatRoomID: ID!): ChatRoom!
-    chatRoomDetailUpdate(chatRoomID: ID!): ChatRoom!
-    chatRoomDelete(chatRoomID: ID!): ChatRoom!
-    chatDelete(chatRoomID: ID!): ChatRoom!
-    addNewMemberInChatRoom(chatRoomID: ID!): ChatRoom!
+#    chatRoomLeave(chatRoomID: ID!): ChatRoom!
+#    chatRoomDetailUpdate(chatRoomID: ID!): ChatRoom!
+#    chatRoomDelete(chatRoomID: ID!): ChatRoom!
+#    chatDelete(chatRoomID: ID!): ChatRoom!
+#    addNewMemberInChatRoom(chatRoomID: ID!): ChatRoom!
     chatRoomListByMember(memberID: ID!): [ChatRoomList!]!
 }
 type Mutation{
