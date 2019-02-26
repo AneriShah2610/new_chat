@@ -40,6 +40,7 @@ CREATE TABLE chatrooms (
 	CONSTRAINT fk_updated_by_ref_users FOREIGN KEY (updated_by) REFERENCES users (id),
 	INDEX chatroom_auto_index_fk_updated_by_ref_users (updated_by ASC),
 	UNIQUE INDEX chatrooms_hashkey_key (hashkey ASC),
+	UNIQUE INDEX creator_id_chatroom_name (creator_id ASC, chatroom_name ASC),
 	FAMILY "primary" (id, creator_id, chatroom_name, chatroom_type, created_at, updated_by, updated_at, deleted_at, hashkey)
 );
 
@@ -54,6 +55,7 @@ CREATE TABLE members (
 	INDEX members_auto_index_fk_chatroom_id_ref_chatrooms (chatroom_id ASC),
 	CONSTRAINT fk_member_id_ref_users FOREIGN KEY (member_id) REFERENCES users (id) ON DELETE CASCADE,
 	INDEX members_auto_index_fk_member_id_ref_users (member_id ASC),
+	UNIQUE INDEX chatroom_id_member_id_unique (chatroom_id ASC, member_id ASC),
 	FAMILY "primary" (id, chatroom_id, member_id, joined_at, deleted_at)
 );
 

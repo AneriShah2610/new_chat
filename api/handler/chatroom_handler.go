@@ -94,20 +94,20 @@ func (r *mutationResolver) NewGroupchatRoom(ctx context.Context, input model.New
 }
 
 // Delete chat by particular member
-func (r *mutationResolver) DeleteChat(ctx context.Context, input model.DeleteChat) (bool, error) {
-	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	_, err := crConn.Db.Exec("UPDATE members SET deleted_at = $1 WHERE chatroom_id = $2 AND member_id = $3", time.Now().UTC(), input.ChatRoomID, input.MemberID)
-	if err != nil {
-		er.DebugPrintf(err)
-		return false, er.InternalServerError
-	}
-	_, err = chatRoomListByMemberID(ctx, input.MemberID)
-	if err != nil {
-		er.DebugPrintf(err)
-		return  false, er.InternalServerError
-	}
-	return true, nil
-}
+//func (r *mutationResolver) DeleteChat(ctx context.Context, input model.DeleteChat) (bool, error) {
+//	crConn := ctx.Value("crConn").(*dal.DbConnection)
+//	_, err := crConn.Db.Exec("UPDATE members SET deleted_at = $1 WHERE chatroom_id = $2 AND member_id = $3", time.Now().UTC(), input.ChatRoomID, input.MemberID)
+//	if err != nil {
+//		er.DebugPrintf(err)
+//		return false, er.InternalServerError
+//	}
+//	_, err = chatRoomListByMemberID(ctx, input.MemberID)
+//	if err != nil {
+//		er.DebugPrintf(err)
+//		return  false, er.InternalServerError
+//	}
+//	return true, nil
+//}
 //func (r *subscriptionResolver) ChatDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
 //	panic("not implemented")
 //}
@@ -152,34 +152,24 @@ func (r *mutationResolver) UpdateChatRoomDetail(ctx context.Context, input model
 //}
 
 // Delete group chatroom only by creator i.e. admin
-func (r *mutationResolver) DeleteChatRoom(ctx context.Context, input model.DeleteChatRoom) (model.ChatRoom, error) {
+func (r *mutationResolver) DeleteChatRoom(ctx context.Context, input model.DeleteChat) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	var chatroom model.ChatRoom
-	isCreator, err := checkCreator(ctx, input.ChatRoomID, input.CreatorID)
+	_, err := crConn.Db.Exec("UPDATE members SET deleted_at = $1 WHERE chatroom_id = $2 AND member_id = $3", time.Now().UTC(), input.ChatRoomID, input.MemberID)
 	if err != nil {
 		er.DebugPrintf(err)
-		return model.ChatRoom{}, er.InternalServerError
+		return false, er.InternalServerError
 	}
-	if isCreator {
-		totalChatRoomMember, err := countChatRoomMember(ctx, input.ChatRoomID)
-		if err != nil {
-			er.DebugPrintf(err)
-			return model.ChatRoom{}, er.InternalServerError
-		}
-		if totalChatRoomMember <= 1 {
-			_, err := crConn.Db.Exec("DELETE FROM chatrooms WHERE id = $1", input.ChatRoomID)
-			if err != nil {
-				er.DebugPrintf(err)
-				return model.ChatRoom{}, er.InternalServerError
-			}
-		}
+	_, err = chatRoomListByMemberID(ctx, input.MemberID)
+	if err != nil {
+		er.DebugPrintf(err)
+		return  false, er.InternalServerError
 	}
-	return chatroom, nil
+	return true, nil
 }
 
-func (r *subscriptionResolver) ChatRoomDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
-	panic("not implemented")
-}
+//func (r *subscriptionResolver) ChatRoomDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
+//	panic("not implemented")
+//}
 
 func (r *chatRoomResolver) Members(ctx context.Context, obj *model.ChatRoom) ([]model.Member, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)

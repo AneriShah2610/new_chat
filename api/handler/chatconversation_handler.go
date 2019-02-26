@@ -375,26 +375,28 @@ func fetchChatRoomList(ctx context.Context, memberID int) ([]model.ChatRoomList,
 	}
 	defer rows.Close()
 	for rows.Next() {
+		//var deletedAt *time.Time
 		err := rows.Scan(&chatroomList.ChatRoomID, &chatroomList.ChatRoomType)
 		if err != nil {
 			//er.DebugPrintf(err)
 			return []model.ChatRoomList{}, err
 		}
+		//if deletedAt == nil {
+			switch chatroomList.ChatRoomType {
 
-		switch chatroomList.ChatRoomType {
-
-		case "PRIVATE":
-			row = crConn.Db.QueryRow("SELECT chatrooms.id,username AS name, chatrooms.chatroom_type, chatrooms.created_at FROM users JOIN members ON members.member_id = users.id JOIN chatrooms ON chatrooms.id = members.chatroom_id WHERE chatrooms.id = $1 AND members.member_id != $2", chatroomList.ChatRoomID, memberID)
-		default:
-			row = crConn.Db.QueryRow("SELECT chatrooms.id, chatrooms.chatroom_name AS name, chatrooms.chatroom_type, chatrooms.created_at FROM chatrooms WHERE  chatrooms.id = $1", chatroomList.ChatRoomID)
+			case "PRIVATE":
+				row = crConn.Db.QueryRow("SELECT chatrooms.id,username AS name, chatrooms.chatroom_type, chatrooms.created_at FROM users JOIN members ON members.member_id = users.id JOIN chatrooms ON chatrooms.id = members.chatroom_id WHERE chatrooms.id = $1 AND members.member_id != $2", chatroomList.ChatRoomID, memberID)
+			default:
+				row = crConn.Db.QueryRow("SELECT chatrooms.id, chatrooms.chatroom_name AS name, chatrooms.chatroom_type, chatrooms.created_at FROM chatrooms WHERE  chatrooms.id = $1", chatroomList.ChatRoomID)
+			}
+			err = row.Scan(&chatroomList.ChatRoomID, &chatroomList.Name, &chatroomList.ChatRoomType, &chatroomList.CreatedAt)
+			if err != nil {
+				//er.DebugPrintf(err)
+				return []model.ChatRoomList{}, err
+			}
+			chatroomLists = append(chatroomLists, chatroomList)
 		}
-		err = row.Scan(&chatroomList.ChatRoomID, &chatroomList.Name, &chatroomList.ChatRoomType, &chatroomList.CreatedAt)
-		if err != nil {
-			//er.DebugPrintf(err)
-			return []model.ChatRoomList{}, err
-		}
-		chatroomLists = append(chatroomLists, chatroomList)
-	}
+	//}
 	return chatroomLists, nil
 }
 

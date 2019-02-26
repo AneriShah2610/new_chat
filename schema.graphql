@@ -157,10 +157,10 @@ type Mutation{
     updateMessage(input: UpdateMessage): ChatConversation!
     updateMessageStatus(input: UpdateMessageStatus!): ChatConversation!
     deleteMessage(input: DeleteMessage): ChatConversation!
-    deleteChat(input: DeleteChat!): Boolean!
+#    deleteChat(input: DeleteChat!): Boolean!
     leaveChatRoom(input: LeaveChatRoom!): String!
     updateChatRoomDetail(input: UpdateChatRoomDetail!): ChatRoom!
-    deleteChatRoom(input: DeleteChatRoom!): ChatRoom!
+    deleteChatRoom(input: DeleteChat!): Boolean!
 }
 type Query{
     users(name: String!): [User!]!
