@@ -36,8 +36,6 @@ models:
     model: github.com/aneri/new_chat/model.ChatRoomType
   MessageType:
     model: github.com/aneri/new_chat/model.MessageType
-  DeleteChatRoom:
-    model: github.com/aneri/new_chat/model.DeleteChatRoom
   DeleteChat:
     model: github.com/aneri/new_chat/model.DeleteChat
   LeaveChatRoom:
@@ -54,3 +52,9 @@ models:
     model: github.com/aneri/new_chat/model.DeleteMessage
   ChatRoomList:
     model: github.com/aneri/new_chat/model.ChatRoomList
+  RemoveMembersFromChatRoom:
+    model: github.com/aneri/new_chat/model.RemoveMembersFromChatRoom
+  MemberCountsWithMemberDetailsByChatRoom:
+    model: github.com/aneri/new_chat/model.MemberCountsWithMemberDetailsByChatRoom
+  RemoveChatRoomPermenantly:
+    model: github.com/aneri/new_chat/model.RemoveChatRoomPermenantly

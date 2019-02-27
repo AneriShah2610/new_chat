@@ -49,6 +49,10 @@ type ChatRoomList{
     chatRoomType: String!
     createdAt: Time!
 }
+type MemberCountsWithMemberDetailsByChatRoom{
+    memberCount: ID!
+    members: [Member!]!
+}
 enum ChatRoomType{
     PRIVATE
     GROUP
@@ -126,14 +130,19 @@ input UpdateChatRoomDetail{
     chatRoomName: String
     updateByID: ID
 }
-input DeleteChatRoom{
-    chatRoomID: ID!
-    creatorID: ID!
-}
 input DeleteMessage{
     chatRoomID: ID!
     messageID: ID!
     DeleteByID: ID!
+}
+input RemoveMembersFromChatRoom{
+    chatRoomID: ID!
+    creatorID:  ID!
+    memberID: ID!
+}
+input RemoveChatRoomPermenantly{
+    chatRoomID: ID!
+    creator: ID!
 }
 type Subscription{
     userJoined: User!
@@ -141,11 +150,11 @@ type Subscription{
     messageStatusUpdate(messageID: ID!, chatRoomID: ID!): ChatConversation!
     messageUpdate(chatRoomID: ID!): ChatConversation!
     messageDelete(chatRoomID: ID!): ChatConversation!
-#    chatRoomLeave(chatRoomID: ID!): ChatRoom!
-#    chatRoomDetailUpdate(chatRoomID: ID!): ChatRoom!
-#    chatRoomDelete(chatRoomID: ID!): ChatRoom!
-#    chatDelete(chatRoomID: ID!): ChatRoom!
-#    addNewMemberInChatRoom(chatRoomID: ID!): ChatRoom!
+    #    chatRoomLeave(chatRoomID: ID!): ChatRoom!
+    #    chatRoomDetailUpdate(chatRoomID: ID!): ChatRoom!
+    #    chatRoomDelete(chatRoomID: ID!): ChatRoom!
+    #    chatDelete(chatRoomID: ID!): ChatRoom!
+    #    addNewMemberInChatRoom(chatRoomID: ID!): ChatRoom!
     chatRoomListByMember(memberID: ID!): [ChatRoomList!]!
 }
 type Mutation{
@@ -157,7 +166,9 @@ type Mutation{
     updateMessage(input: UpdateMessage): ChatConversation!
     updateMessageStatus(input: UpdateMessageStatus!): ChatConversation!
     deleteMessage(input: DeleteMessage): ChatConversation!
-#    deleteChat(input: DeleteChat!): Boolean!
+    #    deleteChat(input: DeleteChat!): Boolean!
+    deleteChatRoomPermenantly(input: RemoveChatRoomPermenantly): ChatRoom!
+    removeMembersFromChatRoomByCreator(input: RemoveMembersFromChatRoom): ChatRoom!
     leaveChatRoom(input: LeaveChatRoom!): ChatRoom!
     updateChatRoomDetail(input: UpdateChatRoomDetail!): ChatRoom!
     deleteChatRoom(input: DeleteChat!): Boolean!
@@ -166,7 +177,7 @@ type Query{
     users(name: String!): [User!]!
     chatRooms: [ChatRoom!]
     chatconversationByChatRoomId(chatRoomID: ID!, memberID: ID!): [ChatConversation!]!
-    memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): [Member!]!
+    memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): MemberCountsWithMemberDetailsByChatRoom!
     chatRoomListByMemberId(memberID: ID!): [ChatRoomList!]!
     MemberLogIn(name: String!): User
 }

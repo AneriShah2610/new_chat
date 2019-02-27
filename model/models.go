@@ -86,11 +86,6 @@ type NewChatRoomMembers struct {
 	MemberIDs  []int `json:"memberIDs"`
 }
 
-type DeleteChatRoom struct {
-	ChatRoomID int `json:"chatRoomID"`
-	CreatorID  int `json:"creatorID"`
-}
-
 type LeaveChatRoom struct {
 	ChatRoomID int `json:"chatRoomID"`
 	MemberID   int `json:"memberID"`
@@ -142,6 +137,20 @@ type ChatRoomList struct {
 
 type UpdateMessageStatus struct {
 	MessageStatus State `json:"messageStatus"`
+}
+type MemberCountsWithMemberDetailsByChatRoom struct {
+	MemberCount int      `json:"memberCount"`
+	Members     []Member `json:"members"`
+}
+
+type RemoveMembersFromChatRoom struct {
+	ChatRoomID int `json:"chatRoomID"`
+	CreatorID  int `json:"creatorID"`
+	MemberID   int `json:"memberID"`
+}
+type RemoveChatRoomPermenantly struct {
+	ChatRoomID int `json:"chatRoomID"`
+	Creator    int `json:"creator"`
 }
 
 type ChatRoomType string
