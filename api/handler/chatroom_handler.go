@@ -249,7 +249,7 @@ func checkHashKeyExistence(ctx context.Context, hashKey string) (model.ChatRoom,
 	return chatroom, nil
 }
 
-func checkCreator(ctx context.Context, chatRoomID int, creatorID int) (bool, error) {
+func checkMemberIsCreator(ctx context.Context, chatRoomID int, creatorID int) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var isCreator bool
 	row := crConn.Db.QueryRow("SELECT true FROM chatrooms WHERE id = $1 AND creator_id = $2", chatRoomID, creatorID)

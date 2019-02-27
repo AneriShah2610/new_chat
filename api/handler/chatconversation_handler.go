@@ -151,7 +151,8 @@ func (r *mutationResolver) NewMessage(ctx context.Context, input model.NewMessag
 	for _, observer := range addChatConvo.AddMessageObservers {
 		observer <- chatconversation
 	}
-	rows, err := crConn.Db.Query("select member_id from members where chatroom_id = $1 and member_id != $2", input.ChatRoomID, input.SenderID)
+	rows, err := crConn.Db.Query("SELECT member_id FROM members WHERE chatroom_id = $1 AND member_id != $2", input.ChatRoomID, input.SenderID)
+	defer  rows.Close()
 	for rows.Next() {
 		var receiverID int
 		err = rows.Scan(&receiverID)

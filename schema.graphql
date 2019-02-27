@@ -158,7 +158,7 @@ type Mutation{
     updateMessageStatus(input: UpdateMessageStatus!): ChatConversation!
     deleteMessage(input: DeleteMessage): ChatConversation!
 #    deleteChat(input: DeleteChat!): Boolean!
-    leaveChatRoom(input: LeaveChatRoom!): String!
+    leaveChatRoom(input: LeaveChatRoom!): ChatRoom!
     updateChatRoomDetail(input: UpdateChatRoomDetail!): ChatRoom!
     deleteChatRoom(input: DeleteChat!): Boolean!
 }

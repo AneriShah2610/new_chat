@@ -154,7 +154,7 @@ type MutationResolver interface {
 	UpdateMessage(ctx context.Context, input *model.UpdateMessage) (model.ChatConversation, error)
 	UpdateMessageStatus(ctx context.Context, input model.UpdateMessageStatus) (model.ChatConversation, error)
 	DeleteMessage(ctx context.Context, input *model.DeleteMessage) (model.ChatConversation, error)
-	LeaveChatRoom(ctx context.Context, input model.LeaveChatRoom) (string, error)
+	LeaveChatRoom(ctx context.Context, input model.LeaveChatRoom) (model.ChatRoom, error)
 	UpdateChatRoomDetail(ctx context.Context, input model.UpdateChatRoomDetail) (model.ChatRoom, error)
 	DeleteChatRoom(ctx context.Context, input model.DeleteChat) (bool, error)
 }
@@ -2535,9 +2535,10 @@ func (ec *executionContext) _Mutation_leaveChatRoom(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(model.ChatRoom)
 	rctx.Result = res
-	return graphql.MarshalString(res)
+
+	return ec._ChatRoom(ctx, field.Selections, &res)
 }
 
 // nolint: vetshadow
@@ -5576,7 +5577,7 @@ type Mutation{
     updateMessageStatus(input: UpdateMessageStatus!): ChatConversation!
     deleteMessage(input: DeleteMessage): ChatConversation!
 #    deleteChat(input: DeleteChat!): Boolean!
-    leaveChatRoom(input: LeaveChatRoom!): String!
+    leaveChatRoom(input: LeaveChatRoom!): ChatRoom!
     updateChatRoomDetail(input: UpdateChatRoomDetail!): ChatRoom!
     deleteChatRoom(input: DeleteChat!): Boolean!
 }
