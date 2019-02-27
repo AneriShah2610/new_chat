@@ -152,7 +152,7 @@ func (r *mutationResolver) NewMessage(ctx context.Context, input model.NewMessag
 		observer <- chatconversation
 	}
 	rows, err := crConn.Db.Query("SELECT member_id FROM members WHERE chatroom_id = $1 AND member_id != $2", input.ChatRoomID, input.SenderID)
-	defer  rows.Close()
+	defer rows.Close()
 	for rows.Next() {
 		var receiverID int
 		err = rows.Scan(&receiverID)

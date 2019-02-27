@@ -60,13 +60,13 @@ func (r *mutationResolver) LeaveChatRoom(ctx context.Context, input model.LeaveC
 			er.DebugPrintf(err)
 			return model.ChatRoom{}, er.InternalServerError
 		}
-		if !isCreator {
+		if isCreator {
 			_, err = leaveMemberFromChatRoom(crConn, input.ChatRoomID, input.MemberID)
 			if err != nil {
 				er.DebugPrintf(err)
 				return model.ChatRoom{}, er.InternalServerError
 			}
-		}else{
+		} else {
 			updateCreator, err := UpdateCreatorOfChatRoom(crConn, model.LeaveChatRoom{})
 			if err != nil {
 				er.DebugPrintf(err)
@@ -78,6 +78,11 @@ func (r *mutationResolver) LeaveChatRoom(ctx context.Context, input model.LeaveC
 				return model.ChatRoom{}, er.InternalServerError
 			}
 		}
+	}
+	err = fetchMemberIDsAndUpdateCharoomList(ctx, crConn, input.ChatRoomID)
+	if err != nil {
+		er.DebugPrintf(err)
+		return model.ChatRoom{}, er.InternalServerError
 	}
 	return model.ChatRoom{}, nil
 }
@@ -144,7 +149,7 @@ func fetchMemberIDsAndUpdateCharoomList(ctx context.Context, crConn *dal.DbConne
 	return nil
 }
 
-func UpdateCreatorOfChatRoom(crConn *dal.DbConnection, room model.LeaveChatRoom)(int, error){
+func UpdateCreatorOfChatRoom(crConn *dal.DbConnection, room model.LeaveChatRoom) (int, error) {
 	var memberID int
 	row := crConn.Db.QueryRow("SELECT member_id FROM members WHERE chatroom_id = $1 AND members.member_id != $2  limit 1", room.ChatRoomID, room.MemberID)
 	err := row.Scan(memberID)
@@ -166,7 +171,7 @@ func UpdateCreatorOfChatRoom(crConn *dal.DbConnection, room model.LeaveChatRoom)
 	return memberID, nil
 }
 
-func leaveMemberFromChatRoom(crConn *dal.DbConnection, chatRoomID int, memberID int)(model.ChatRoom, error){
+func leaveMemberFromChatRoom(crConn *dal.DbConnection, chatRoomID int, memberID int) (model.ChatRoom, error) {
 	_, err := crConn.Db.Exec("DELETE FROM members WHERE chatroom_id = $1 and member_id = $2", chatRoomID, memberID)
 	if err != nil {
 		er.DebugPrintf(err)

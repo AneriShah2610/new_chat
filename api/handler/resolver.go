@@ -10,33 +10,35 @@ import (
 )
 
 type Resolver struct {
-	AddMessages map[int]*model.ChatRoom
+	AddMessages   map[int]*model.ChatRoom
 	UpdateMessage map[int]*model.ChatRoom
 	DeleteMessage map[int]*model.ChatRoom
-	ChatRoomList map[int]*model.Member
-	mu    sync.Mutex // nolint: structcheck
+	ChatRoomList  map[int]*model.Member
+	mu            sync.Mutex // nolint: structcheck
 }
 
-func NewResolver() *Resolver{
-	return  &Resolver{
-		AddMessages: make(map[int]*model.ChatRoom),
+func NewResolver() *Resolver {
+	return &Resolver{
+		AddMessages:   make(map[int]*model.ChatRoom),
 		UpdateMessage: make(map[int]*model.ChatRoom),
 		DeleteMessage: make(map[int]*model.ChatRoom),
-		ChatRoomList: make(map[int]*model.Member),
+		ChatRoomList:  make(map[int]*model.Member),
 	}
 }
+
 var g = NewResolver()
-func init(){
+
+func init() {
 	g = NewResolver()
 }
 
 func New() graph.Config {
 	return graph.Config{
 		Resolvers: &Resolver{
-			AddMessages: map[int]*model.ChatRoom{},
+			AddMessages:   map[int]*model.ChatRoom{},
 			UpdateMessage: map[int]*model.ChatRoom{},
 			DeleteMessage: map[int]*model.ChatRoom{},
-			ChatRoomList: map[int]*model.Member{},
+			ChatRoomList:  map[int]*model.Member{},
 		},
 	}
 }
