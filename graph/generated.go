@@ -76,6 +76,7 @@ type ComplexityRoot struct {
 		Name         func(childComplexity int) int
 		ChatRoomType func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
+		TotalMember  func(childComplexity int) int
 	}
 
 	Member struct {
@@ -808,6 +809,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ChatRoomList.CreatedAt(childComplexity), true
+
+	case "ChatRoomList.totalMember":
+		if e.complexity.ChatRoomList.TotalMember == nil {
+			break
+		}
+
+		return e.complexity.ChatRoomList.TotalMember(childComplexity), true
 
 	case "Member.id":
 		if e.complexity.Member.Id == nil {
@@ -2002,6 +2010,8 @@ func (ec *executionContext) _ChatRoomList(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
+		case "totalMember":
+			out.Values[i] = ec._ChatRoomList_totalMember(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2104,6 +2114,26 @@ func (ec *executionContext) _ChatRoomList_createdAt(ctx context.Context, field g
 	res := resTmp.(time.Time)
 	rctx.Result = res
 	return graphql.MarshalTime(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _ChatRoomList_totalMember(ctx context.Context, field graphql.CollectedField, obj *model.ChatRoomList) graphql.Marshaler {
+	rctx := &graphql.ResolverContext{
+		Object: "ChatRoomList",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalMember, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	rctx.Result = res
+	return graphql.MarshalInt(res)
 }
 
 var memberImplementors = []string{"Member"}
@@ -5736,6 +5766,7 @@ type ChatRoomList{
     name: String
     chatRoomType: String!
     createdAt: Time!
+    totalMember: Int
 }
 type MemberCountsWithMemberDetailsByChatRoom{
     memberCount: ID!

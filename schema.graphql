@@ -48,6 +48,7 @@ type ChatRoomList{
     name: String
     chatRoomType: String!
     createdAt: Time!
+    totalMember: Int
 }
 type MemberCountsWithMemberDetailsByChatRoom{
     memberCount: ID!
