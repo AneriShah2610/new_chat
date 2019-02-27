@@ -41,6 +41,7 @@ func (r *mutationResolver) NewChatRoomMembers(ctx context.Context, input model.N
 	}
 	return true, nil
 }
+
 //func (r *subscriptionResolver) AddNewMemberInChatRoom(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
 //	panic("Not implemented")
 //}
@@ -70,6 +71,7 @@ func (r *mutationResolver) LeaveChatRoom(ctx context.Context, input model.LeaveC
 	}
 	return fmt.Sprintf("%s is leave from %s", input.MemberID, input.ChatRoomID), nil
 }
+
 //
 //func (r *subscriptionResolver) ChatRoomLeave(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
 //	panic("not implemented")
@@ -89,6 +91,7 @@ func (r *memberResolver) Member(ctx context.Context, obj *model.Member) (model.U
 	}
 	return memberInfo, nil
 }
+
 func checkChatRoomTypeByChatID(ctx context.Context, chatRoomID int) (string, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatroom model.ChatRoom
@@ -100,6 +103,7 @@ func checkChatRoomTypeByChatID(ctx context.Context, chatRoomID int) (string, err
 	}
 	return chatroom.ChatRoomType.String(), nil
 }
+
 func checkMemberExistence(ctx context.Context, chatRoomID int, memberID int) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var isMemberExist bool
@@ -111,6 +115,7 @@ func checkMemberExistence(ctx context.Context, chatRoomID int, memberID int) (bo
 	}
 	return isMemberExist, nil
 }
+
 func fetchMemberIDsAndUpdateCharoomList(ctx context.Context, crConn *dal.DbConnection, chatRoomID int) error {
 	rows, err := crConn.Db.Query("select member_id from members where chatroom_id = $1", chatRoomID)
 	for rows.Next() {

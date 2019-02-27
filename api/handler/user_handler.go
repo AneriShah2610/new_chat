@@ -19,7 +19,7 @@ func init() {
 	addUserChannel = map[int]chan model.User{}
 }
 
-// Retrieve user details
+// Retrieve all user details
 func (r *queryResolver) Users(ctx context.Context, name string) ([]model.User, error) {
 	var users []model.User
 	var user model.User
@@ -29,7 +29,7 @@ func (r *queryResolver) Users(ctx context.Context, name string) ([]model.User, e
 		er.DebugPrintf(err)
 		return []model.User{}, er.InternalServerError
 	}
-	if isUserExist{
+	if isUserExist {
 		rows, err := crConn.Db.Query("SELECT id, username, first_name, last_name, email, contact, bio, profile_picture, created_at, updated_at FROM users WHERE username != $1 ORDER BY username ASC", name)
 		if err != nil {
 			er.DebugPrintf(err)
@@ -81,7 +81,8 @@ func (r *mutationResolver) NewUser(ctx context.Context, input model.NewUser) (mo
 	}
 	return user, nil
 }
-func (r *queryResolver) MemberLogIn(ctx context.Context, name string) (*model.User, error){
+
+func (r *queryResolver) MemberLogIn(ctx context.Context, name string) (*model.User, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var user model.User
 	isUserExist, err := CheckUserExistence(ctx, name)
@@ -89,10 +90,10 @@ func (r *queryResolver) MemberLogIn(ctx context.Context, name string) (*model.Us
 		er.DebugPrintf(err)
 		return &model.User{}, er.InternalServerError
 	}
-	if isUserExist{
+	if isUserExist {
 		row := crConn.Db.QueryRow("SELECT id, username, first_name, last_name, email, contact, bio, profile_picture, created_at, updated_at FROM users WHERE username = $1", name)
 		err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Email, &user.Contact, &user.Bio, &user.ProfilePicture, &user.CreatedAt, &user.UpdatedAt)
-		if err != nil{
+		if err != nil {
 			er.DebugPrintf(err)
 			return &model.User{}, er.InternalServerError
 		}
@@ -102,6 +103,7 @@ func (r *queryResolver) MemberLogIn(ctx context.Context, name string) (*model.Us
 
 	return &user, nil
 }
+
 // Listen New User Request & shown to live
 func (r *subscriptionResolver) UserJoined(ctx context.Context) (<-chan model.User, error) {
 	rand.Seed(time.Now().UnixNano())

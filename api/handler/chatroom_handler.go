@@ -13,7 +13,6 @@ import (
 	"github.com/aneri/new_chat/model"
 )
 
-
 // Retrieve all Chatrooms either it is private chat or group chat
 func (r *queryResolver) ChatRooms(ctx context.Context) ([]model.ChatRoom, error) {
 	chatRoomData, err := chatRoomData(ctx)
@@ -53,6 +52,12 @@ func (r *mutationResolver) NewPrivateChatRoom(ctx context.Context, input model.N
 			er.DebugPrintf(err)
 			return model.ChatRoom{}, er.InternalServerError
 		}
+	} else {
+		_, err := updateDeleteFlagAndSetZero(crConn, chatRoom.ChatRoomID)
+		if err != nil {
+			er.DebugPrintf(err)
+			return model.ChatRoom{}, er.InternalServerError
+		}
 	}
 	return chatRoom, nil
 }
@@ -82,12 +87,12 @@ func (r *mutationResolver) NewGroupchatRoom(ctx context.Context, input model.New
 		_, err = crConn.Db.Exec("INSERT INTO chatconversation (chatroom_id, sender_id, message, message_type, message_status, created_at) VALUES ($1, $2, $3, $4, $5, $6)", chatroom.ChatRoomID, memberID, msg, model.MessageTypeText, model.StateAdd, time.Now().UTC())
 		if err != nil {
 			er.DebugPrintf(err)
-			return  model.ChatRoom{}, er.InternalServerError
+			return model.ChatRoom{}, er.InternalServerError
 		}
 		_, err = chatRoomListByMemberID(ctx, memberID)
 		if err != nil {
 			er.DebugPrintf(err)
-			return  model.ChatRoom{}, er.InternalServerError
+			return model.ChatRoom{}, er.InternalServerError
 		}
 	}
 	return chatroom, nil
@@ -146,6 +151,7 @@ func (r *mutationResolver) UpdateChatRoomDetail(ctx context.Context, input model
 	}
 	return chatroom, nil
 }
+
 //
 //func (r *subscriptionResolver) ChatRoomDetailUpdate(ctx context.Context, chatRoomID int) (<-chan model.ChatRoom, error) {
 //	panic("not implemented)
@@ -154,7 +160,7 @@ func (r *mutationResolver) UpdateChatRoomDetail(ctx context.Context, input model
 // Delete group chatroom only by creator i.e. admin
 func (r *mutationResolver) DeleteChatRoom(ctx context.Context, input model.DeleteChat) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
-	_, err := crConn.Db.Exec("UPDATE members SET deleted_at = $1 WHERE chatroom_id = $2 AND member_id = $3", time.Now().UTC(), input.ChatRoomID, input.MemberID)
+	_, err := crConn.Db.Exec("UPDATE members SET (deleted_at,delete_flag) = ($1,1) WHERE chatroom_id = $2 AND member_id = $3", time.Now().UTC(), input.ChatRoomID, input.MemberID)
 	if err != nil {
 		er.DebugPrintf(err)
 		return false, er.InternalServerError
@@ -162,7 +168,7 @@ func (r *mutationResolver) DeleteChatRoom(ctx context.Context, input model.Delet
 	_, err = chatRoomListByMemberID(ctx, input.MemberID)
 	if err != nil {
 		er.DebugPrintf(err)
-		return  false, er.InternalServerError
+		return false, er.InternalServerError
 	}
 	return true, nil
 }
@@ -230,6 +236,7 @@ func chatRoomData(ctx context.Context) ([]model.ChatRoom, error) {
 	}
 	return chatrooms, nil
 }
+
 func checkHashKeyExistence(ctx context.Context, hashKey string) (model.ChatRoom, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatroom model.ChatRoom
@@ -274,4 +281,13 @@ func createChatRoom(crConn *dal.DbConnection, creator_id int, chatroom_name *str
 		return 0, err
 	}
 	return chatRoomID, nil
+}
+
+func updateDeleteFlagAndSetZero(crConn *dal.DbConnection, chatRoomID int) (bool, error) {
+	_, err := crConn.Db.Exec("UPDATE members SET delete_flag = 0 WHERE chatroom_id = $1", chatRoomID)
+	if err != nil {
+		er.DebugPrintf(err)
+		return false, er.InternalServerError
+	}
+	return true, nil
 }
