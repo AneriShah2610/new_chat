@@ -93,7 +93,7 @@ func (r *queryResolver) MemberLogIn(ctx context.Context, name string) (*model.Us
 	if isUserExist {
 		row := crConn.Db.QueryRow("SELECT id, username, first_name, last_name, email, contact, bio, profile_picture, created_at, updated_at FROM users WHERE username = $1", name)
 		err := row.Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.Email, &user.Contact, &user.Bio, &user.ProfilePicture, &user.CreatedAt, &user.UpdatedAt)
-		if err != nil && err != sql.ErrNoRows{
+		if err != nil && err != sql.ErrNoRows {
 			er.DebugPrintf(err)
 			return &model.User{}, er.InternalServerError
 		}
