@@ -109,12 +109,13 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Users                        func(childComplexity int, name string) int
-		ChatRooms                    func(childComplexity int) int
-		ChatconversationByChatRoomId func(childComplexity int, chatRoomID int, memberID int) int
-		MemberListByChatRoomId       func(childComplexity int, chatRoomID int, memberID int) int
-		ChatRoomListByMemberId       func(childComplexity int, memberID int) int
-		MemberLogIn                  func(childComplexity int, name string) int
+		Users                                  func(childComplexity int, name string) int
+		ChatRooms                              func(childComplexity int) int
+		ChatconversationByChatRoomId           func(childComplexity int, chatRoomID int, memberID int) int
+		MemberListByChatRoomId                 func(childComplexity int, chatRoomID int, memberID int) int
+		ChatRoomListByMemberId                 func(childComplexity int, memberID int) int
+		MemberLogIn                            func(childComplexity int, name string) int
+		MemberListWhichAreNoTmembersOfChatRoom func(childComplexity int, chatRoomID int, memberID int) int
 	}
 
 	Subscription struct {
@@ -175,6 +176,7 @@ type QueryResolver interface {
 	MemberListByChatRoomID(ctx context.Context, chatRoomID int, memberID int) (model.MemberCountsWithMemberDetailsByChatRoom, error)
 	ChatRoomListByMemberID(ctx context.Context, memberID int) ([]model.ChatRoomList, error)
 	MemberLogIn(ctx context.Context, name string) (*model.User, error)
+	MemberListWhichAreNoTMembersOfChatRoom(ctx context.Context, chatRoomID int, memberID int) ([]model.User, error)
 }
 type SubscriptionResolver interface {
 	UserJoined(ctx context.Context) (<-chan model.User, error)
@@ -489,6 +491,30 @@ func field_Query_MemberLogIn_args(rawArgs map[string]interface{}) (map[string]in
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+
+}
+
+func field_Query_MemberListWhichAreNoTMembersOfChatRoom_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["chatRoomID"]; ok {
+		var err error
+		arg0, err = model.UnmarshalID(tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["chatRoomID"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["memberID"]; ok {
+		var err error
+		arg1, err = model.UnmarshalID(tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["memberID"] = arg1
 	return args, nil
 
 }
@@ -1088,6 +1114,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.MemberLogIn(childComplexity, args["name"].(string)), true
+
+	case "Query.MemberListWhichAreNoTMembersOfChatRoom":
+		if e.complexity.Query.MemberListWhichAreNoTmembersOfChatRoom == nil {
+			break
+		}
+
+		args, err := field_Query_MemberListWhichAreNoTMembersOfChatRoom_args(rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MemberListWhichAreNoTmembersOfChatRoom(childComplexity, args["chatRoomID"].(int), args["memberID"].(int)), true
 
 	case "Subscription.userJoined":
 		if e.complexity.Subscription.UserJoined == nil {
@@ -2971,6 +3009,15 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				out.Values[i] = ec._Query_MemberLogIn(ctx, field)
 				wg.Done()
 			}(i, field)
+		case "MemberListWhichAreNoTMembersOfChatRoom":
+			wg.Add(1)
+			go func(i int, field graphql.CollectedField) {
+				out.Values[i] = ec._Query_MemberListWhichAreNoTMembersOfChatRoom(ctx, field)
+				if out.Values[i] == graphql.Null {
+					invalid = true
+				}
+				wg.Done()
+			}(i, field)
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -3284,6 +3331,68 @@ func (ec *executionContext) _Query_MemberLogIn(ctx context.Context, field graphq
 	}
 
 	return ec._User(ctx, field.Selections, res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Query_MemberListWhichAreNoTMembersOfChatRoom(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := field_Query_MemberListWhichAreNoTMembersOfChatRoom_args(rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx := &graphql.ResolverContext{
+		Object: "Query",
+		Args:   args,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().MemberListWhichAreNoTMembersOfChatRoom(rctx, args["chatRoomID"].(int), args["memberID"].(int))
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.User)
+	rctx.Result = res
+
+	arr1 := make(graphql.Array, len(res))
+	var wg sync.WaitGroup
+
+	isLen1 := len(res) == 1
+	if !isLen1 {
+		wg.Add(len(res))
+	}
+
+	for idx1 := range res {
+		idx1 := idx1
+		rctx := &graphql.ResolverContext{
+			Index:  &idx1,
+			Result: &res[idx1],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(idx1 int) {
+			if !isLen1 {
+				defer wg.Done()
+			}
+			arr1[idx1] = func() graphql.Marshaler {
+
+				return ec._User(ctx, field.Selections, &res[idx1])
+			}()
+		}
+		if isLen1 {
+			f(idx1)
+		} else {
+			go f(idx1)
+		}
+
+	}
+	wg.Wait()
+	return arr1
 }
 
 // nolint: vetshadow
@@ -5265,6 +5374,12 @@ func UnmarshalNewChatRoomMembers(v interface{}) (model.NewChatRoomMembers, error
 			if err != nil {
 				return it, err
 			}
+		case "creatorID":
+			var err error
+			it.CreatorID, err = model.UnmarshalID(v)
+			if err != nil {
+				return it, err
+			}
 		case "memberIDs":
 			var err error
 			var rawIf1 []interface{}
@@ -5815,6 +5930,7 @@ input NewGroupChatRoom{
 }
 input NewChatRoomMembers{
     chatRoomID: ID!
+    creatorID: ID!
     memberIDs: [ID!]
 }
 input NewMessage{
@@ -5902,6 +6018,7 @@ type Query{
     memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): MemberCountsWithMemberDetailsByChatRoom!
     chatRoomListByMemberId(memberID: ID!): [ChatRoomList!]!
     MemberLogIn(name: String!): User
+    MemberListWhichAreNoTMembersOfChatRoom(chatRoomID: ID!, memberID: ID!):[User!]!
 }
 scalar Time`},
 )

@@ -508,30 +508,15 @@
         }
       }
     ```
-24) Delete ChatRoom Permanently By Owner Only:
+24) Fetch Users Which Are Not Member OF ChatRoom
     ```
-      mutation{
-        deleteChatRoomPermenantly(input:{
-          chatRoomID:"9554",
-          creator:"5451"
-        }){
-          chatRoomID
-          creatorID
-        }
-      }
-    ```
-25) Remove Members From ChatRoom Only By Owner:
-    ```
-      mutation{
-        removeMembersFromChatRoomByCreator(input:{
-          chatRoomID:"5416541",
-          creatorID:"4654",
-          memberID:"541521"
-        }){
-          chatRoomID
-          creatorID
-          chatRoomName
-          chatRoomType
+      query{
+        MemberListWhichAreNoTMembersOfChatRoom(chatRoomID:"0113348585",memberID:"9878415154185"){
+          id
+          userName
+          firstName
+          lastName
+          email
         }
       }
     ```

@@ -83,6 +83,7 @@ type Member struct {
 }
 type NewChatRoomMembers struct {
 	ChatRoomID int   `json:"chatRoomID"`
+	CreatorID int    `json:creatorID`
 	MemberIDs  []int `json:"memberIDs"`
 }
 

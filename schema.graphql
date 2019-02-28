@@ -94,6 +94,7 @@ input NewGroupChatRoom{
 }
 input NewChatRoomMembers{
     chatRoomID: ID!
+    creatorID: ID!
     memberIDs: [ID!]
 }
 input NewMessage{
@@ -181,5 +182,6 @@ type Query{
     memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): MemberCountsWithMemberDetailsByChatRoom!
     chatRoomListByMemberId(memberID: ID!): [ChatRoomList!]!
     MemberLogIn(name: String!): User
+    MemberListWhichAreNoTMembersOfChatRoom(chatRoomID: ID!, memberID: ID!):[User!]!
 }
 scalar Time
