@@ -133,7 +133,7 @@ type ChatRoomList struct {
 	Name         *string   `json:"name"`
 	ChatRoomType string    `json:"chatRoomType"`
 	CreatedAt    time.Time `json:"createdAt"`
-	TotalMember  int		`json:"totalMember"`
+	TotalMember  *int		`json:"totalMember"`
 }
 
 type UpdateMessageStatus struct {

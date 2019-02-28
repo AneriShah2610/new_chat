@@ -247,7 +247,7 @@ func countTotalChatRoomMember(crConn *dal.DbConnection, chatRoomID int) (int, er
 
 func createChatRoom(crConn *dal.DbConnection, creator_id int, chatroom_name *string, chatroom_type model.ChatRoomType, hashkey *string) (int, error) {
 	var chatRoomID int
-	row := crConn.Db.QueryRow("INSERT INTO chatrooms (creator_id, chatroom_name, chatroom_type, created_at, hashkey) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (creator_id, chatroom_name) DO NOTHING RETURNING id", creator_id, chatroom_name, chatroom_type, time.Now(), hashkey)
+	row := crConn.Db.QueryRow("INSERT INTO chatrooms (creator_id, chatroom_name, chatroom_type, created_at, hashkey) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (creator_id, chatroom_name) DO NOTHING RETURNING id", creator_id, chatroom_name, chatroom_type, time.Now().UTC(), hashkey)
 	err := row.Scan(&chatRoomID)
 	if err != nil {
 		return 0, err

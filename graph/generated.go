@@ -164,7 +164,7 @@ type MutationResolver interface {
 	DeleteMessage(ctx context.Context, input *model.DeleteMessage) (model.ChatConversation, error)
 	DeleteChatRoomPermenantly(ctx context.Context, input *model.RemoveChatRoomPermenantly) (model.ChatRoom, error)
 	RemoveMembersFromChatRoomByCreator(ctx context.Context, input *model.RemoveMembersFromChatRoom) (model.ChatRoom, error)
-	LeaveChatRoom(ctx context.Context, input model.LeaveChatRoom) (model.ChatRoom, error)
+	LeaveChatRoom(ctx context.Context, input model.LeaveChatRoom) (bool, error)
 	UpdateChatRoomDetail(ctx context.Context, input model.UpdateChatRoomDetail) (model.ChatRoom, error)
 	DeleteChatRoom(ctx context.Context, input model.DeleteChat) (bool, error)
 }
@@ -2131,9 +2131,13 @@ func (ec *executionContext) _ChatRoomList_totalMember(ctx context.Context, field
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(*int)
 	rctx.Result = res
-	return graphql.MarshalInt(res)
+
+	if res == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalInt(*res)
 }
 
 var memberImplementors = []string{"Member"}
@@ -2836,10 +2840,9 @@ func (ec *executionContext) _Mutation_leaveChatRoom(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(model.ChatRoom)
+	res := resTmp.(bool)
 	rctx.Result = res
-
-	return ec._ChatRoom(ctx, field.Selections, &res)
+	return graphql.MarshalBoolean(res)
 }
 
 // nolint: vetshadow
@@ -5888,7 +5891,7 @@ type Mutation{
     #    deleteChat(input: DeleteChat!): Boolean!
     deleteChatRoomPermenantly(input: RemoveChatRoomPermenantly): ChatRoom!
     removeMembersFromChatRoomByCreator(input: RemoveMembersFromChatRoom): ChatRoom!
-    leaveChatRoom(input: LeaveChatRoom!): ChatRoom!
+    leaveChatRoom(input: LeaveChatRoom!): Boolean!
     updateChatRoomDetail(input: UpdateChatRoomDetail!): ChatRoom!
     deleteChatRoom(input: DeleteChat!): Boolean!
 }

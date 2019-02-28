@@ -170,7 +170,7 @@ type Mutation{
     #    deleteChat(input: DeleteChat!): Boolean!
     deleteChatRoomPermenantly(input: RemoveChatRoomPermenantly): ChatRoom!
     removeMembersFromChatRoomByCreator(input: RemoveMembersFromChatRoom): ChatRoom!
-    leaveChatRoom(input: LeaveChatRoom!): ChatRoom!
+    leaveChatRoom(input: LeaveChatRoom!): Boolean!
     updateChatRoomDetail(input: UpdateChatRoomDetail!): ChatRoom!
     deleteChatRoom(input: DeleteChat!): Boolean!
 }

@@ -1,31 +1,12 @@
 // ToDo:
 
-    messageUpdate(chatRoomID: ID!): ChatConversation!
-       messageDelete(chatRoomID: ID!): ChatConversation!
-       chatRoomLeave(chatRoomID: ID!): ChatRoom!
-       chatRoomDetailUpdate(chatRoomID: ID!): ChatRoom!
-       chatRoomDelete(chatRoomID: ID!): ChatRoom!
-
-
-   updateMessage(input: UpdateMessage, senderID: ID!, messageID: ID!): ChatConversation!
-       deleteMessage(senderID: ID!, messageID: ID!): ChatConversation!
-       deleteChatRoomMember(input: DeleteChatRoomMember!): Member!
-       leaveChatRoom(input: LeaveChatRoom!): Member!
-       updateChatRoomDetail(input: UpdateChatRoomDetail!): ChatRoom!
-       deleteChatRoom(input: DeleteChatRoom!): ChatRoom!
-
-    memberListByChatRoomId(chatRoomID: ID!, memberID: ID!): [Member!]!
-       chatRoomListByMemberId(memberId: ID!): [ChatRoom!]!
-
-
-       -- after deleting chat retrieve chatroomlist by memberid
-       -- leave chatroom by member in group chat
-
-
-
-1. CheckUserExistence in user_handler.go(by email)
-2. Select by true in CheckUserExistence
-3. Returning id
-4. All place time.Now()
-5. True and false at all function
-6. Global variable of variable for subscription
+> Functionality to remove members from chatroom by creator only
+> Delete chatroom permanently by creator only
+> Delete multiple message from chatroom at once
+> Upload any type of documents
+> Clear whole chat conversation
+> Group icon
+> Message status update as per message read by chatroom member
+> Last live in chatroom(i.e. When member is lastly on live chatroom)
+> User live status(i.e. Online/Offline)
+> Online Typing

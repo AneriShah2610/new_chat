@@ -1,15 +1,17 @@
 # Chat Api Functionality
+#### Run all API on `https://localhost:8585/`
 
 1) Create New User :
    ```
    mutation{
      newUser(input:{
-       userName:"ABCDEFGH",
-       firstName:"ABC",
-       lastName:"DEF",
-       email:"abcdefgh@gmailcom"
+       userName:"ABCD",
+       firstName:"ab",
+       lastName:"cd",
+       email:"xyz@pqr.com",
        contact:"0123456789",
-       bio:"XXXXXX"
+       profilePicture:"",
+       bio:"ABCDEFGHI"
      }){
        id
        userName
@@ -20,116 +22,14 @@
        bio
        profilePicture
        createdAt
+       updatedAt
      }
    }
    ```
 2) Retrieve All Users Details Except Own:
     ```
-   query{
-     users(name:"XYZ"){
-      id
-       userName
-       firstName
-       lastName
-       email
-       contact
-       bio
-       profilePicture
-       createdAt
-     }
-   }
-    ```
-3) Get Live Update For New User Join:
-    ```
-   subscription{
-     userJoined{
-       id
-       userName
-       firstName
-       lastName
-       email
-       contact
-       bio
-       profilePicture
-       createdAt
-     }
-   }
-    ``` 
-4) Create New ChatRoom:
-    ```
-   mutation{
-     newChatRoom(input:{
-       creatorID:"0123456789",
-       chatRoomType:PRIVATE/GROUP
-     },receiverID:"98547562145"){
-       chatRoomID
-       creatorID
-       creator{
-         id
-         userName
-         firstName
-         lastName
-         email
-         contact
-         bio
-       }
-       chatRoomName
-       chatRoomType
-       createdAt
-     }
-   }
-    ```
-    For private chat you have to add receiverID but for group chat there is no need of receiver but it is 
-    mandatory to write chatroom name otherwise it send null name 
-5) Retrieve All ChatRoom:
-    ```
     query{
-      chatRooms{
-        chatRoomID
-        creatorID
-        creator{
-          id
-          userName
-          firstName
-          lastName
-          email
-          contact
-          bio
-          profilePicture
-          createdAt
-        }
-        chatRoomName
-        chatRoomType
-        members{
-          id
-          chatRoomID
-          member{
-            id
-            userName
-            firstName
-            lastName
-            email
-            contact
-            bio
-            profilePicture
-            createdAt
-          }
-          joinAt
-        }
-        createdAt
-      }
-    }
-    ```
-6) Add Member in Group ChatRoom:
-    ```
-  mutation{
-    newChatRoomMember(input:{
-      chatRoomID:"0123456789",
-      memberID:"0123456789"
-    }){
-      id
-      chatRoomID
-      member{
+      users(name:"ABCD"){
         id
         userName
         firstName
@@ -139,215 +39,122 @@
         bio
         profilePicture
         createdAt
+        updatedAt
       }
-      joinAt
     }
-  }
     ```
- 7) Retrieve ChatConversation by particular ChatRoom:
+3) Get Live Update For New User Join:
     ```
-   query{
-     chatconversationByChatRoomId(chatRoomID:"0123456789",memberID:"0123456789"){
-       messageId
-       chatRoomID
-       senderID
-       sender{
-         id
-         userName
-         firstName
-         lastName
-       }
-       message
-       messageType
-       messageStatus
-       messageParentId
-       createdAt
-     }
-   }
-    ```
-8) Add Message in ChatRoom:
-    ```
-   mutation{
-     newMessage(input:{
-       chatRoomID:"0123456789",
-       senderID:"98745462145",
-       message:"XYZZZ",
-       messageType:TEXT/IMAGE/VIDEO/GIF/AUDIO,
-       messageStatus:SEND/UNREAD/READ
-     },senderID:"15485451"){
-       messageId
-       chatRoomID
-       senderID
-       sender{
+     subscription{
+       userJoined({
          id
          userName
          firstName
          lastName
          email
          contact
+         bio
+         profilePicture
+         createdAt
+         updatedAt 
        }
-        message
-        messageType
-        messageStatus
-        messageParentId
-        createdAt
      }
-   }
+    ``` 
+4) Create New Private ChatRoom:
     ```
-9) Delete Chat By Particular MemberID:
-    ```
-    mutation{
-      deleteChat(input:{
-        chatRoomID:"0123456",
-        memberID:"8745210"
-      }){
-        id
-        chatRoomID
-        joinAt
-      }
-    }
-    ```
-10) Leave ChatRoom From Group: 
-    ```
-    mutation{
-      leaveChatRoom(input:{
-        chatRoomID:"013466789",
-        memberID:"8745321457"
-      })
-    }
-    ```
-11) Update ChatRoom Details:
-    ```
-    mutation{
-      updateChatRoomDetail(input:{
-        chatRoomID:"123456",
-        chatRoomName:"XXXX",
-        updateByID:"0123456789"
-      }){
-        chatRoomID
-        creatorID
-        creator{
-          id
-          userName
-          firstName
-          lastName
-          email
-          contact
-          bio
-          createdAt
-        }
-        members{
-          id
-          member{
+      mutation{
+        newPrivateChatRoom(input:{
+          creatorID:"011345679",
+          chatRoomType:PRIVATE,
+          receiverID:"98742414"
+        }){
+          chatRoomID
+          creatorID
+          creator{
             id
             userName
             firstName
             lastName
+            email
+            contact
+            bio
+            profilePicture
+            createdAt
+            updatedAt
           }
         }
-        chatRoomName
-        chatRoomType
-        updateByID
-        updateBy{
-          userName
-          firstName
-          lastName
-          email
+      }
+    ```
+5) Create New Group ChatRoom:
+    ```
+      mutation{
+        newGroupchatRoom(input:{
+          creatorID:"011345679",
+        	chatRoomName:"ABCDSFGFF",
+          chatRoomType:GROUP,
+          receiverID: ["547895","24679541","48451"]
+        }){
+          chatRoomID
+          creatorID
+          creator{
+            id
+            userName
+            firstName
+            lastName
+            email
+            contact
+            bio
+            profilePicture
+            createdAt
+            updatedAt
+          }
         }
       }
-    }
     ```
-12) View MemberList By ChatRoom:
+6) Add New Members in Group ChatRoom(return true/false):
     ```
-    query{
-      memberListByChatRoomId(chatRoomID:"012456789",memberID:"4578954120"){
-        id
-        chatRoomID
-        member{
-          id
-          name
-          email
-          contact
-        }
-        joinAt
+      mutation{
+        newChatRoomMembers(input:{
+          chatRoomID:"012457",
+          memberIDs:["848451","848484"]
+        })
       }
-    }
     ```
-13) View ChatRoomList By MemberId:
+7) Leave ChatRoom(return true/false):
     ```
-    query{
-      chatRoomListByMemberId(memberID:"0123456789"){
-        chatRoomID
-        chatRoomName
-        chatRoomType
+      mutation{
+      	leaveChatRoom(input:{
+          chatRoomID:"012456",
+          memberID:"0165415"
+        })
       }
-    }
     ```
-14) Update Message(only sender can update message):
+    > note: If Leave member is admin of group than it will update admin of it
+8) Update ChatRoom Details By Any Member Of ChatRoom:
     ```
-    mutation{
-      updateMessage(input:{
-        message:"XXX",
-        senderID:"0123456789",
-        messageID:"0123456789",
-        chatRoomID:"0123456789"
-      }){
-        messageId
-        chatRoomID
-        senderID
-        message
-        messageType
-      }
-    }
-    ```
-15) Delete Message(only sender can delete message):
-    ```
-    mutation{
-      deleteMessage(input:{
-        chatRoomID:"84854",
-        messageID:"1546",
-        DeleteByID:"7447"
-      }){
-        messageId
-        chatRoomID
-        senderID
-        message
-        messageType
-      }
-    }
-    ```
-16) Live Message Post:
-    ```
-    subscription{
-      messagePost(chatRoomID:"123456789"){
-        messageId
-        chatRoomID
-        senderID
-        sender{
-          id
-          userName
-          firstName
-          lastName
-          email
-          contact
-          bio
-          profilePicture
-        }
-        message
-        messageType
-        messageStatus
-        createdAt
-      }
-    }
-    ```
-17) Live Update Of Message:
-    ```
-     subscription{
-          messageUpdate(chatRoomID:"123456789"){
-            messageId
-            chatRoomID
-            senderID
-            sender{
+      mutation{
+        updateChatRoomDetail(input:{
+          chatRoomID:"4841",
+          chatRoomName:"SFER",
+          updateByID:"0144584"
+        }){
+          chatRoomID
+          creatorID
+          creator{
+            id
+            userName
+            firstName
+            lastName
+            email
+            contact
+            bio
+            profilePicture
+          }
+          chatRoomName
+          chatRoomType
+          members{
+            id
+            member{
               id
               userName
               firstName
@@ -357,40 +164,374 @@
               bio
               profilePicture
             }
-            message
-            messageType
-            messageStatus
-            createdAt
+            joinAt
+          }
+          createdAt
+          updateByID
+          updateBy{
+            id
+            userName
+            firstName
+            lastName
+            email
+            contact
+          }
+          updatedAt
+        }
+      }
+    ```
+9) Delete ChatRoom From Recently Chat View By Particular Member Not Affect Other Members ChatRoomList(return true/false)
+    ```
+      mutation{
+        deleteChatRoom(input:{
+          chatRoomID:"6551",
+          memberID:"54151511"
+        })
+      }
+    ```
+10) Retrieve All ChatRooms Details In System Only For Admin(currently not set that only admin can view this):
+    ```
+      query{
+        chatRooms{
+          chatRoomID
+          creatorID
+          creator{
+            id
+            userName
+            firstName
+            lastName
+            email
+            contact
+            profilePicture
+          }
+          chatRoomName
+          chatRoomType
+          members{
+            id
+            member{
+              id
+              userName
+              firstName
+              lastName
+              email
+              contact
+              bio
+              profilePicture
+            }
+            joinAt
+          }
+          createdAt
+          updateByID
+          updateBy{
+            id
+            userName
+            firstName
+            lastName
+            email
+            contact
+            bio
+            profilePicture
+          }
+          updatedAt
+        }
+      }
+    ```
+11) Post Message In ChatRoo:
+    ```
+      mutation{
+        newMessage(input:{
+          chatRoomID:"5415415",
+          senderID:"2954415",
+          message:"fbyerfb",
+          messageType:TEXT/IMAGE/VIDEO/GIF/AUDIO,
+          messageParentId:"47412",
+          messageStatus:SEND,
+        }){
+          messageId
+          chatRoomID
+          senderID
+          sender{
+            id
+            userName
+            firstName
+            lastName
+            profilePicture
+          }
+          message
+          messageType
+          messageStatus
+          messageParentId
+          createdAt
+        }
+      }
+    ```
+    > note: messageParentId is used for reply message 
+12) Update Message Only By Owner Of Message:
+    ```
+      mutation{
+        updateMessage(input:{
+          message:"ngutrgnv",
+          senderID:"4445151",
+          messageID:"854623",
+          chatRoomID:"4651"
+        }){
+          messageId
+          chatRoomID
+          senderID
+          sender{
+            id
+            userName
+            firstName
+            lastName
+            profilePicture
+          }
+          message
+          messageType
+          messageParentId
+          createdAt
+        }
+      }
+    ```
+13) Update Message Status:
+    ```
+      mutation{
+        updateMessageStatus(input:{
+          messageStatus:SEND
+        }){
+          messageId
+          chatRoomID
+          senderID
+          sender{
+            id
+            userName
+            profilePicture
+          }
+          message
+          messageType
+          messageStatus
+          messageParentId
+          createdAt
+        }
+      }
+
+    ```
+14) Delete Message By Owner Only:
+    ```
+      mutation{
+        deleteMessage(input:{
+          chatRoomID:"541451",
+          messageID:"65451",
+          DeleteByID:"654651"
+        }){
+          messageId
+          chatRoomID
+          message
+          senderID
+        }
+      }
+    ```
+15) Retrieve ChatRoom Conversation:
+    ```
+      query{
+        chatconversationByChatRoomId(chatRoomID:"5451",memberID:"646541"){
+          messageId
+          chatRoomID
+          senderID
+          sender{
+            id
+            userName
+            firstName
+            lastName
+            email
+            contact
+            profilePicture
+          }
+          message
+          messageType
+          messageStatus
+          messageParentId
+          createdAt
+          updatedAt
+        }
+      }
+    ```
+16) Retrieve MemberList By ChatRoom:
+    ```
+      query{
+        memberListByChatRoomId(chatRoomID:"54151",memberID:"6541521"){
+          memberCount
+          members{
+            id
+            chatRoomID
+            member{
+              id
+              userName
+              firstName
+              lastName
+              email
+              contact
+              bio
+              profilePicture
+            }
+            joinAt
           }
         }
+      }
     ```
-18) Live Delete Of Message:
+17) Retrieve chatRoomList By Member:
     ```
-    subscription{
-      messageDelete(chatRoomID:"123456789"){
-        messageId
-        chatRoomID
-        senderID
-        sender{
+      query{
+        chatRoomListByMemberId(memberID:"51521"){
+          chatRoomID
+          name
+          chatRoomType
+          createdAt
+          totalMember
+        }
+      }
+    ```
+18) For MemberLogIn: 
+    ```
+      query{
+        MemberLogIn(name:"dfeudfh"){
           id
           userName
           firstName
-          lastName
           email
           contact
-          bio
-          profilePicture
         }
-        message
-        messageType
-        messageStatus
-        createdAt
       }
-    }
     ```
-19) Live update of ChatRoom:
+19) Live Message Post:
     ```
+      subscription{
+        messagePost(chatRoomID:"5451"){
+          messageId
+          chatRoomID
+          senderID
+          sender{
+            id
+            userName
+            firstName
+            lastName
+            email
+            contact
+            profilePicture
+          }
+          message
+          messageType
+          messageStatus
+          messageParentId
+          createdAt
+        }
+      }
     ```
-20) Live Update of ChatRoom Delete:
+20) Live Message Update:
     ```
+      subscription{
+        messageUpdate(chatRoomID:"5451"){
+          messageId
+          chatRoomID
+          senderID
+          sender{
+            id
+            userName
+            firstName
+            lastName
+            email
+            contact
+            profilePicture
+          }
+          message
+          messageType
+          messageStatus
+          messageParentId
+          createdAt
+        }
+      }
+    ```
+21) Live Message Delete:
+    ```
+      subscription{
+        messageDelete(chatRoomID:"5451"){
+          messageId
+          chatRoomID
+          senderID
+          sender{
+            id
+            userName
+            firstName
+            lastName
+            email
+            contact
+            profilePicture
+          }
+          message
+          messageType
+          messageStatus
+          messageParentId
+          createdAt
+        }
+      }
+    ```
+22) Live Update Of ChatRoomList By Member:
+    ```
+      subscription{
+        chatRoomListByMember(memberID:"54151"){
+          chatRoomID
+          name
+          chatRoomType
+          createdAt
+          totalMember
+        }
+      }
+    ```
+23) Live Update Of Message Status Update:
+    ```
+      subscription{
+        messageStatusUpdate(messageID:"56655",chatRoomID:"454"){
+          messageId
+          chatRoomID
+          senderID
+          sender{
+            id
+            userName
+            firstName
+            lastName
+            email
+            profilePicture
+          }
+          message
+          messageType
+          messageStatus
+          messageParentId
+        }
+      }
+    ```
+24) Delete ChatRoom Permanently By Owner Only:
+    ```
+      mutation{
+        deleteChatRoomPermenantly(input:{
+          chatRoomID:"9554",
+          creator:"5451"
+        }){
+          chatRoomID
+          creatorID
+        }
+      }
+    ```
+25) Remove Members From ChatRoom Only By Owner:
+    ```
+      mutation{
+        removeMembersFromChatRoomByCreator(input:{
+          chatRoomID:"5416541",
+          creatorID:"4654",
+          memberID:"541521"
+        }){
+          chatRoomID
+          creatorID
+          chatRoomName
+          chatRoomType
+        }
+      }
     ```

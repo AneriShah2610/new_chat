@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"github.com/aneri/new_chat/api/dal"
 	er "github.com/aneri/new_chat/error"
 	"github.com/aneri/new_chat/model"
@@ -43,44 +42,48 @@ func (r *mutationResolver) NewChatRoomMembers(ctx context.Context, input model.N
 }
 
 // Leave chatroom only for group chat
-func (r *mutationResolver) LeaveChatRoom(ctx context.Context, input model.LeaveChatRoom) (model.ChatRoom, error) {
+func (r *mutationResolver) LeaveChatRoom(ctx context.Context, input model.LeaveChatRoom) (bool, error) {
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	chatRoomType, err := checkChatRoomTypeByChatID(crConn, input.ChatRoomID)
 	if err != nil && err == sql.ErrNoRows {
 		er.DebugPrintf(err)
-		return model.ChatRoom{}, er.InternalServerError
+		return false, er.InternalServerError
 	}
 	if chatRoomType == "GROUP" {
 		isCreator, err := checkMemberIsCreator(crConn, input.ChatRoomID, input.MemberID)
 		if err != nil {
 			er.DebugPrintf(err)
-			return model.ChatRoom{}, er.InternalServerError
+			return false, er.InternalServerError
 		}
-		if isCreator {
+		if !isCreator {
 			_, err = leaveMemberFromChatRoom(crConn, input.ChatRoomID, input.MemberID)
 			if err != nil {
 				er.DebugPrintf(err)
-				return model.ChatRoom{}, er.InternalServerError
+				return false, er.InternalServerError
 			}
 		} else {
-			updateCreator, err := UpdateCreatorOfChatRoom(crConn, model.LeaveChatRoom{})
+			_, err := UpdateCreatorOfChatRoom(crConn, input.ChatRoomID, input.MemberID)
 			if err != nil {
 				er.DebugPrintf(err)
-				return model.ChatRoom{}, er.InternalServerError
+				return false, er.InternalServerError
 			}
-			_, err = leaveMemberFromChatRoom(crConn, input.ChatRoomID, updateCreator)
+			_, err = leaveMemberFromChatRoom(crConn, input.ChatRoomID, input.MemberID)
 			if err != nil {
 				er.DebugPrintf(err)
-				return model.ChatRoom{}, er.InternalServerError
+				return false, er.InternalServerError
 			}
 		}
+	}
+	_, err = chatRoomListByMemberID(crConn, input.MemberID)
+	if err != nil {
+		return false, er.InternalServerError
 	}
 	err = fetchMemberIDsAndUpdateCharoomList(crConn, input.ChatRoomID)
 	if err != nil {
 		er.DebugPrintf(err)
-		return model.ChatRoom{}, er.InternalServerError
+		return false, er.InternalServerError
 	}
-	return model.ChatRoom{}, nil
+	return true, nil
 }
 
 //
@@ -138,7 +141,6 @@ func fetchMemberIDsAndUpdateCharoomList(crConn *dal.DbConnection, chatRoomID int
 		if err != nil {
 			return err
 		}
-		fmt.Println(memberID)
 		_, err = chatRoomListByMemberID(crConn, memberID)
 		if err != nil {
 			return err
@@ -147,39 +149,41 @@ func fetchMemberIDsAndUpdateCharoomList(crConn *dal.DbConnection, chatRoomID int
 	return nil
 }
 
-func UpdateCreatorOfChatRoom(crConn *dal.DbConnection, room model.LeaveChatRoom) (int, error) {
-	var memberID int
-	row := crConn.Db.QueryRow("SELECT member_id FROM members WHERE chatroom_id = $1 AND members.member_id != $2  limit 1", room.ChatRoomID, room.MemberID)
-	err := row.Scan(memberID)
+func UpdateCreatorOfChatRoom(crConn *dal.DbConnection, chatRoomID int, memberID int) (int, error) {
+	var newCreatorID int
+	row := crConn.Db.QueryRow("SELECT member_id FROM members WHERE chatroom_id = $1 AND members.member_id != $2  limit 1", chatRoomID, memberID)
+	err := row.Scan(&newCreatorID)
 	if err != nil && err != sql.ErrNoRows {
 		//er.DebugPrintf(err)
 		return 0, err
 	}
-	_, err = crConn.Db.Exec("UPDATE chatrooms SET (creator_id) = $1 WHERE id = $2", memberID, room.ChatRoomID)
+	_, err = crConn.Db.Exec("UPDATE chatrooms SET creator_id = $1 WHERE id = $2", newCreatorID, chatRoomID)
 	if err != nil && err != sql.ErrNoRows {
 		//er.DebugPrintf(err)
 		return 0, err
 	}
 	msg := strconv.Itoa(memberID) + " is now Group Admin"
-	_, err = crConn.Db.Exec("INSERT INTO chatconversation (chatroom_id, sender_id, message, message_type, message_status, created_at) VALUES ($1, $2, $3, $4, $5, $6)", room.ChatRoomID, memberID, msg, model.MessageTypeText, model.StateAdd, time.Now().UTC())
+	_, err = crConn.Db.Exec("INSERT INTO chatconversation (chatroom_id, sender_id, message, message_type, message_status, created_at) VALUES ($1, $2, $3, $4, $5, $6)", chatRoomID, newCreatorID, msg, model.MessageTypeText, model.StateAdd, time.Now().UTC())
 	if err != nil {
 		er.DebugPrintf(err)
 		return 0, er.InternalServerError
 	}
-	return memberID, nil
+	return newCreatorID, nil
 }
 
-func leaveMemberFromChatRoom(crConn *dal.DbConnection, chatRoomID int, memberID int) (model.ChatRoom, error) {
-	_, err := crConn.Db.Exec("DELETE FROM members WHERE chatroom_id = $1 and member_id = $2", chatRoomID, memberID)
+func leaveMemberFromChatRoom(crConn *dal.DbConnection, chatRoomID int, memberID int) (bool, error) {
+	var member model.Member
+	row := crConn.Db.QueryRow("DELETE FROM members WHERE chatroom_id = $1 and member_id = $2", chatRoomID, memberID)
+	err := row.Scan(&member.ChatRoomID, &member.MemberID)
 	if err != nil {
 		er.DebugPrintf(err)
-		return model.ChatRoom{}, err
+		return false, err
 	}
 	msg := strconv.Itoa(memberID) + " leaved from this group"
 	_, err = crConn.Db.Exec("INSERT INTO chatconversation (chatroom_id, sender_id, message, message_type, message_status, created_at) VALUES ($1, $2, $3, $4, $5, $6)", chatRoomID, memberID, msg, model.MessageTypeText, model.StateAdd, time.Now().UTC())
 	if err != nil {
 		er.DebugPrintf(err)
-		return model.ChatRoom{}, err
+		return false, err
 	}
-	return model.ChatRoom{}, nil
+	return true, nil
 }

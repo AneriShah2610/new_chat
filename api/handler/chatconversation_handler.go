@@ -397,25 +397,26 @@ func fetchChatRoomList(crConn *dal.DbConnection, memberID int) ([]model.ChatRoom
 			//er.DebugPrintf(err)
 			return []model.ChatRoomList{}, err
 		}
-		if deleteFlag == 0 {
-			switch chatroomList.ChatRoomType {
-			//ToDo: Add Feature of count total members in group
-			case "PRIVATE":
+
+		switch chatroomList.ChatRoomType {
+		//ToDo: Add Feature of count total members in group
+		case "PRIVATE":
+			if deleteFlag == 0 {
 				row = crConn.Db.QueryRow("SELECT chatrooms.id,username AS name, chatrooms.chatroom_type, chatrooms.created_at FROM users JOIN members ON members.member_id = users.id JOIN chatrooms ON chatrooms.id = members.chatroom_id WHERE chatrooms.id = $1 AND members.member_id != $2", chatroomList.ChatRoomID, memberID)
 				err = row.Scan(&chatroomList.ChatRoomID, &chatroomList.Name, &chatroomList.ChatRoomType, &chatroomList.CreatedAt)
 				if err != nil {
 					//er.DebugPrintf(err)
 					return []model.ChatRoomList{}, err
 				}
-			default:
-				row = crConn.Db.QueryRow("SELECT chatrooms.id, chatrooms.chatroom_name AS name, chatrooms.chatroom_type, chatrooms.created_at, count(members.member_id) FROM chatrooms join members on members.chatroom_id = chatrooms.id WHERE  chatrooms.id = $1 group by chatrooms.id, chatrooms.chatroom_name, chatrooms.chatroom_type, chatrooms.created_at", chatroomList.ChatRoomID)
-				err = row.Scan(&chatroomList.ChatRoomID, &chatroomList.Name, &chatroomList.ChatRoomType, &chatroomList.CreatedAt, &chatroomList.TotalMember)
-				if err != nil {
-					//er.DebugPrintf(err)
-					return []model.ChatRoomList{}, err
-				}
+				chatroomLists = append(chatroomLists, chatroomList)
 			}
-
+		default:
+			row = crConn.Db.QueryRow("SELECT chatrooms.id, chatrooms.chatroom_name AS name, chatrooms.chatroom_type, chatrooms.created_at, count(members.member_id) FROM chatrooms join members on members.chatroom_id = chatrooms.id WHERE  chatrooms.id = $1 group by chatrooms.id, chatrooms.chatroom_name, chatrooms.chatroom_type, chatrooms.created_at", chatroomList.ChatRoomID)
+			err = row.Scan(&chatroomList.ChatRoomID, &chatroomList.Name, &chatroomList.ChatRoomType, &chatroomList.CreatedAt, &chatroomList.TotalMember)
+			if err != nil {
+				//er.DebugPrintf(err)
+				return []model.ChatRoomList{}, err
+			}
 			chatroomLists = append(chatroomLists, chatroomList)
 		}
 	}
