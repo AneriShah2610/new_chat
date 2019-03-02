@@ -110,9 +110,10 @@ func (r *subscriptionResolver) UserJoined(ctx context.Context) (<-chan model.Use
 	id := helper.Random(1, 10000000000000)
 	userEvent := make(chan model.User, 1)
 	go func() {
-
 		<-ctx.Done()
+		r.mu.Lock()
 		delete(addUserChannel, id)
+		r.mu.Unlock()
 	}()
 	addUserChannel[id] = userEvent
 	return userEvent, nil

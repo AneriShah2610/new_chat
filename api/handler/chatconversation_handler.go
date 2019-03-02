@@ -82,11 +82,6 @@ func (r *queryResolver) MemberListByChatRoomID(ctx context.Context, chatRoomID i
 			members = append(members, member)
 		}
 	}
-	//membersCount, err := countTotalChatRoomMember(crConn, chatRoomID)
-	//if err != nil {
-	//	er.DebugPrintf(err)
-	//	return model.MemberCountsWithMemberDetailsByChatRoom{}, er.InternalServerError
-	//}
 	membersCountWithMemberDetail.MemberCount = len(members)
 	membersCountWithMemberDetail.Members = members
 	return membersCountWithMemberDetail, nil
@@ -103,11 +98,13 @@ func (r *queryResolver) ChatRoomListByMemberID(ctx context.Context, memberID int
 }
 
 func (r *subscriptionResolver) ChatRoomListByMember(ctx context.Context, memberID int) (<-chan []model.ChatRoomList, error) {
+	r.mu.Lock()
 	chatroomlist := g.ChatRoomList[memberID]
 	if chatroomlist == nil {
 		chatroomlist = &model.Member{MemberID: memberID, ChatRoomListObservers: map[int]chan []model.ChatRoomList{}}
 		g.ChatRoomList[memberID] = chatroomlist
 	}
+	r.mu.Unlock()
 	id, _ := strconv.Atoi(helper.RandString(20))
 	chatroomListEvenet := make(chan []model.ChatRoomList, 1)
 	go func() {
@@ -116,18 +113,21 @@ func (r *subscriptionResolver) ChatRoomListByMember(ctx context.Context, memberI
 		delete(chatroomlist.ChatRoomListObservers, id)
 		r.mu.Unlock()
 	}()
+	r.mu.Lock()
 	chatroomlist.ChatRoomListObservers[id] = chatroomListEvenet
+	r.mu.Unlock()
 	return chatroomListEvenet, nil
 }
 
 // Create New Message
 func (r *mutationResolver) NewMessage(ctx context.Context, input model.NewMessage) (model.ChatConversation, error) {
+	r.mu.Lock()
 	addChatConvo := g.AddMessages[input.ChatRoomID]
 	if addChatConvo == nil {
 		addChatConvo = &model.ChatRoom{ChatRoomID: input.ChatRoomID, AddMessageObservers: map[int]chan model.ChatConversation{}}
 		g.AddMessages[input.ChatRoomID] = addChatConvo
 	}
-
+	r.mu.Unlock()
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	chatconversation := model.ChatConversation{
 		ChatRoomID:      input.ChatRoomID,
@@ -157,9 +157,11 @@ func (r *mutationResolver) NewMessage(ctx context.Context, input model.NewMessag
 	}
 
 	addChatConvo.ChatConversations = append(addChatConvo.ChatConversations, chatconversation)
+	r.mu.Lock()
 	for _, observer := range addChatConvo.AddMessageObservers {
 		observer <- chatconversation
 	}
+	r.mu.Unlock()
 	rows, err := crConn.Db.Query("SELECT member_id FROM members WHERE chatroom_id = $1 AND member_id != $2", input.ChatRoomID, input.SenderID)
 	defer rows.Close()
 	for rows.Next() {
@@ -185,12 +187,13 @@ func (r *mutationResolver) NewMessage(ctx context.Context, input model.NewMessag
 
 // Live updates of new messages
 func (r *subscriptionResolver) MessagePost(ctx context.Context, chatRoomID int) (<-chan model.ChatConversation, error) {
+	r.mu.Lock()
 	addChatConvo := g.AddMessages[chatRoomID]
 	if addChatConvo == nil {
 		addChatConvo = &model.ChatRoom{ChatRoomID: chatRoomID, AddMessageObservers: map[int]chan model.ChatConversation{}}
 		g.AddMessages[chatRoomID] = addChatConvo
 	}
-
+	r.mu.Unlock()
 	id := helper.Random(1, 99999999999999)
 	addMessageEvent := make(chan model.ChatConversation, 1)
 
@@ -200,19 +203,20 @@ func (r *subscriptionResolver) MessagePost(ctx context.Context, chatRoomID int) 
 		delete(addChatConvo.AddMessageObservers, id)
 		r.mu.Unlock()
 	}()
-
+	r.mu.Lock()
 	addChatConvo.AddMessageObservers[id] = addMessageEvent
-
+	r.mu.Unlock()
 	return addMessageEvent, nil
 }
 
 func (r *mutationResolver) UpdateMessage(ctx context.Context, input *model.UpdateMessage) (model.ChatConversation, error) {
+	r.mu.Lock()
 	updateChatConvo := g.UpdateMessage[input.ChatRoomID]
 	if updateChatConvo == nil {
 		updateChatConvo = &model.ChatRoom{ChatRoomID: input.ChatRoomID, UpdateMessageObservers: map[int]chan model.ChatConversation{}}
 		g.UpdateMessage[input.ChatRoomID] = updateChatConvo
 	}
-
+	r.mu.Unlock()
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatconversation model.ChatConversation
 	chatconversation = model.ChatConversation{
@@ -242,20 +246,22 @@ func (r *mutationResolver) UpdateMessage(ctx context.Context, input *model.Updat
 		}
 	}
 	updateChatConvo.ChatConversations = append(updateChatConvo.ChatConversations, chatconversation)
+	r.mu.Lock()
 	for _, observer := range updateChatConvo.UpdateMessageObservers {
 		observer <- chatconversation
 	}
-
+	r.mu.Unlock()
 	return chatconversation, nil
 }
 
 func (r *subscriptionResolver) MessageUpdate(ctx context.Context, chatRoomID int) (<-chan model.ChatConversation, error) {
+	r.mu.Lock()
 	updateChatConvo := g.UpdateMessage[chatRoomID]
 	if updateChatConvo == nil {
 		updateChatConvo = &model.ChatRoom{ChatRoomID: chatRoomID, UpdateMessageObservers: map[int]chan model.ChatConversation{}}
 		g.UpdateMessage[chatRoomID] = updateChatConvo
 	}
-
+	r.mu.Unlock()
 	id := helper.Random(1, 100000000000000)
 	updateMessageEvent := make(chan model.ChatConversation, 1)
 
@@ -265,9 +271,9 @@ func (r *subscriptionResolver) MessageUpdate(ctx context.Context, chatRoomID int
 		delete(updateChatConvo.UpdateMessageObservers, id)
 		r.mu.Unlock()
 	}()
-
+	r.mu.Lock()
 	updateChatConvo.UpdateMessageObservers[id] = updateMessageEvent
-
+	r.mu.Unlock()
 	return updateMessageEvent, nil
 }
 
@@ -280,11 +286,13 @@ func (r *subscriptionResolver) MessageStatusUpdate(ctx context.Context, messageI
 }
 
 func (r *mutationResolver) DeleteMessage(ctx context.Context, input *model.DeleteMessage) (model.ChatConversation, error) {
+	r.mu.Lock()
 	deleteChatConvo := g.DeleteMessage[input.ChatRoomID]
 	if deleteChatConvo == nil {
 		deleteChatConvo = &model.ChatRoom{ChatRoomID: input.ChatRoomID, DeleteMessageObservers: map[int]chan model.ChatConversation{}}
 		g.DeleteMessage[input.ChatRoomID] = deleteChatConvo
 	}
+	r.mu.Unlock()
 	crConn := ctx.Value("crConn").(*dal.DbConnection)
 	var chatconversation model.ChatConversation
 	isMemberExist, err := checkMemberExistence(crConn, input.ChatRoomID, input.DeleteByID)
@@ -307,19 +315,22 @@ func (r *mutationResolver) DeleteMessage(ctx context.Context, input *model.Delet
 			}
 		}
 	}
+	r.mu.Lock()
 	for _, observer := range deleteChatConvo.DeleteMessageObservers {
 		observer <- chatconversation
 	}
+	r.mu.Unlock()
 	return chatconversation, nil
 }
 
 func (r *subscriptionResolver) MessageDelete(ctx context.Context, chatRoomID int) (<-chan model.ChatConversation, error) {
+	r.mu.Lock()
 	deleteChatConvo := g.DeleteMessage[chatRoomID]
 	if deleteChatConvo == nil {
 		deleteChatConvo = &model.ChatRoom{ChatRoomID: chatRoomID, DeleteMessageObservers: map[int]chan model.ChatConversation{}}
 		g.DeleteMessage[chatRoomID] = deleteChatConvo
 	}
-
+	r.mu.Unlock()
 	id := helper.Random(1, 11111111111111)
 	deleteMessageEvent := make(chan model.ChatConversation, 1)
 
@@ -329,9 +340,9 @@ func (r *subscriptionResolver) MessageDelete(ctx context.Context, chatRoomID int
 		delete(deleteChatConvo.DeleteMessageObservers, id)
 		r.mu.Unlock()
 	}()
-
+	r.mu.Lock()
 	deleteChatConvo.DeleteMessageObservers[id] = deleteMessageEvent
-
+	r.mu.Unlock()
 	return deleteMessageEvent, nil
 }
 
@@ -426,20 +437,23 @@ func fetchChatRoomList(crConn *dal.DbConnection, memberID int) ([]model.ChatRoom
 func chatRoomListByMemberID(crConn *dal.DbConnection, memberID int) ([]model.ChatRoomList, error) {
 	var chatroomLists []model.ChatRoomList
 	var err error
+	//r.mu.Lock()
 	chatroomlist := g.ChatRoomList[memberID]
 	if chatroomlist == nil {
 		chatroomlist = &model.Member{MemberID: memberID, ChatRoomListObservers: map[int]chan []model.ChatRoomList{}}
 		g.ChatRoomList[memberID] = chatroomlist
 	}
-
+	//r.mu.Unlock()
 	chatroomLists, err = fetchChatRoomList(crConn, memberID)
 	if err != nil {
 		//er.DebugPrintf(err)
 		return []model.ChatRoomList{}, err
 	}
 	chatroomlist.ChatRoomLists = append(chatroomlist.ChatRoomLists, chatroomLists)
+	//r.mu.Lock()
 	for _, observer := range chatroomlist.ChatRoomListObservers {
 		observer <- chatroomLists
 	}
+	//r.mu.Unlock()
 	return chatroomLists, nil
 }
