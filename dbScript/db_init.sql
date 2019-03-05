@@ -55,14 +55,13 @@ CREATE TABLE members
   deleted_at  TIMESTAMP NULL,
   delete_flag INT       NULL     DEFAULT 0:::INT,
   CONSTRAINT "primary" PRIMARY KEY (id ASC),
-  CONSTRAINT fk_chatroom_id_ref_chatrooms FOREIGN KEY (chatroom_id) REFERENCES chatrooms (id),
+  CONSTRAINT fk_chatroom_id_ref_chatrooms FOREIGN KEY (chatroom_id) REFERENCES chatrooms (id) ON DELETE CASCADE,
   INDEX       members_auto_index_fk_chatroom_id_ref_chatrooms(chatroom_id ASC),
   CONSTRAINT fk_member_id_ref_users FOREIGN KEY (member_id) REFERENCES users (id) ON DELETE CASCADE,
   INDEX       members_auto_index_fk_member_id_ref_users(member_id ASC),
   UNIQUE INDEX chatroom_id_member_id_unique (chatroom_id ASC, member_id ASC),
   FAMILY      "primary"(id, chatroom_id, member_id, joined_at, deleted_at, delete_flag)
 );
-
 
 CREATE TABLE chatconversation
 (
