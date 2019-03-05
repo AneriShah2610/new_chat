@@ -381,6 +381,7 @@ func checkIsDeleted(crConn *dal.DbConnection, chatRoomID int, memberID int) (boo
 
 func CheckMemberOwner(crConn *dal.DbConnection, messageID int, senderID int) (bool, error) {
 	var isMessageOwner bool
+
 	row := crConn.Db.QueryRow("SELECT true FROM chatconversation WHERE id = $1 And sender_id = $2", messageID, senderID)
 	err := row.Scan(&isMessageOwner)
 	if err != nil && err != sql.ErrNoRows {
@@ -394,7 +395,8 @@ func fetchChatRoomList(crConn *dal.DbConnection, memberID int) ([]model.ChatRoom
 	var chatroomLists []model.ChatRoomList
 
 	var row *sql.Row
-	rows, err := crConn.Db.Query("SELECT DISTINCT(chatrooms.id), chatrooms.chatroom_type, members.delete_flag FROM chatconversation JOIN members ON members.chatroom_id = chatconversation.chatroom_id JOIN chatrooms ON chatrooms.id = members.chatroom_id WHERE members.member_id = $1 ORDER BY chatconversation.created_at DESC", memberID)
+	//TODO: Need to change query (Solve issue in distinct with order by)
+	rows, err := crConn.Db.Query("select distinct (chatrooms.id), chatrooms.chatroom_type, members.delete_flag, max(chatconversation.created_at) from chatconversation join members on members.chatroom_id = chatconversation.chatroom_id join chatrooms on chatrooms.id = members.chatroom_id where members.member_id = $1 group by chatrooms.id, chatrooms.chatroom_type, members.delete_flag order by max(chatconversation.created_at) desc", memberID)
 	if err != nil {
 		//er.DebugPrintf(err)
 		return []model.ChatRoomList{}, err
@@ -403,14 +405,14 @@ func fetchChatRoomList(crConn *dal.DbConnection, memberID int) ([]model.ChatRoom
 	for rows.Next() {
 		var deleteFlag int
 		var chatroomList model.ChatRoomList
-		err := rows.Scan(&chatroomList.ChatRoomID, &chatroomList.ChatRoomType, &deleteFlag)
+		var create_at time.Time
+		err := rows.Scan(&chatroomList.ChatRoomID, &chatroomList.ChatRoomType, &deleteFlag, &create_at)
 		if err != nil {
 			//er.DebugPrintf(err)
 			return []model.ChatRoomList{}, err
 		}
 
 		switch chatroomList.ChatRoomType {
-		//ToDo: Add Feature of count total members in group
 		case "PRIVATE":
 			if deleteFlag == 0 {
 				row = crConn.Db.QueryRow("SELECT chatrooms.id,username AS name, chatrooms.chatroom_type, chatrooms.created_at FROM users JOIN members ON members.member_id = users.id JOIN chatrooms ON chatrooms.id = members.chatroom_id WHERE chatrooms.id = $1 AND members.member_id != $2", chatroomList.ChatRoomID, memberID)
