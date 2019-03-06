@@ -1,31 +1,28 @@
 package main
 
 import (
-	"github.com/99designs/gqlgen/handler"
+	log "log"
+	http "net/http"
+	os "os"
+	"time"
+
+	handler "github.com/99designs/gqlgen/handler"
 	resolver "github.com/aneri/new_chat/api/handler"
 	"github.com/aneri/new_chat/api/middleware"
 	"github.com/aneri/new_chat/graph"
 	"github.com/gorilla/mux"
-	"io"
-	"log"
-	"net/http"
-	"os"
-	//"github.com/gorilla/websocket"
-	"golang.org/x/net/websocket"
+	"github.com/gorilla/websocket"
 )
 
-const defaultPort = "5555"
+const defaultPort = "8585"
 
-//var clients = make(map[*websocket.Conn]bool)
+var clients = make(map[*websocket.Conn]bool)
 //var upgrader = websocket.Upgrader{
 //	CheckOrigin: func(request *http.Request) bool {
 //		return true
 //	},
 //
 //}
-func EchoServer(ws *websocket.Conn) {
-	io.Copy(ws, ws)
-}
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -33,18 +30,16 @@ func main() {
 	}
 	router := mux.NewRouter()
 	//router.HandleFunc("/ws", handleConnection)
-	router.Handle("/ws", websocket.Handler(EchoServer))
 	queryHandler := corsAccess(handler.GraphQL(graph.NewExecutableSchema(
 		graph.Config{
 			Resolvers: &resolver.Resolver{},
 		}),
-
-		//handler.WebsocketUpgrader(websocket.Upgrader{
-		//	CheckOrigin: func(request *http.Request) bool {
-		//		return true
-		//	},
-		//	HandshakeTimeout: 10 * time.Second,
-		//}),
+		handler.WebsocketUpgrader(websocket.Upgrader{
+			CheckOrigin: func(request *http.Request) bool {
+				return true
+			},
+			HandshakeTimeout: 10 * time.Second,
+		}),
 	))
 	router.Handle("/", handler.Playground("GraphQL playground", "/query"))
 	router.Handle("/query", middleware.MultipleMiddleware(queryHandler, middleware.CockroachDbMiddleware))
